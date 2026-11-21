@@ -1,0 +1,113 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "東京",
+        "所在区": "千代田区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7671, 35.6812]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "品川",
+        "所在区": "港区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7387, 35.6285]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "渋谷",
+        "所在区": "渋谷区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7016, 35.658]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "新宿",
+        "所在区": "新宿区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7005, 35.6896]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "池袋",
+        "所在区": "豊島区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7109, 35.7295]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "上野",
+        "所在区": "台東区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7774, 35.7138]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "秋葉原",
+        "所在区": "千代田区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7731, 35.6984]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "御茶ノ水",
+        "所在区": "千代田区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.765, 35.6995]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "四ツ谷",
+        "所在区": "新宿区",
+        "備考": "サンプル（座標は概略）"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7301, 35.686]
+      }
+    }
+  ]
+}
