@@ -27,5 +27,15 @@ export function MapCanvas({ initialViewport, className }: MapCanvasProps) {
     }
   }, [createMap, registerPort])
 
-  return <div ref={containerRef} className={className} />
+  /*
+   * 地図ライブラリは自分のクラス（例: .maplibregl-map { position: relative }）をコンテナに付ける。
+   * それは @layer の外の CSS なので、Tailwind（@layer utilities）の absolute などより常に優先され、
+   * 同じ要素にレイアウト用クラスを付けると打ち消されて高さ 0 になる。
+   * そこで、レイアウトは外側の div に任せ、地図には内側の div を渡してインラインで 100% にする。
+   */
+  return (
+    <div className={className}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  )
 }

@@ -2,7 +2,9 @@ import {
   Map as MapLibreMap,
   NavigationControl,
   ScaleControl,
+  setWorkerUrl,
 } from 'maplibre-gl'
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { AddLayerObject, MapMouseEvent } from 'maplibre-gl'
 import type { MapFactory, MapPort } from '../map-port'
@@ -19,7 +21,14 @@ import type {
  * ここでは MapPort の各操作を MapLibre のソース/レイヤー操作へ翻訳する。
  */
 
-type PaintProperty = Parameters<MapLibreMap['setPaintProperty']>[1]
+/*
+ * MapLibre v6 は Worker を「自分のファイルの隣（import.meta.url 基準）」に探す。
+ * Vite の依存事前バンドル（dev）や本番バンドルで本体が移動すると Worker が 404 になるため、
+ * Vite にアセットとして配信させた URL を明示的に渡す。
+ */
+setWorkerUrl(maplibreWorkerUrl)
+
+type PaintProperty =Parameters<MapLibreMap['setPaintProperty']>[1]
 
 const BASEMAP_SOURCE_ID = 'basemap'
 const BASEMAP_LAYER_ID = 'basemap'
