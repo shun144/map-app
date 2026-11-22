@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { openAppDatabase } from '#/lib/db'
+import { openAppDatabase } from '#/lib/db/database'
 import { createIdbLayerRepository } from './idb-layer-repository'
 
 beforeEach(() => {

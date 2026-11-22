@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import type { MapFeature } from '#/lib/map'
+import type { MapFeature } from '#/lib/map/types'
 
-/** 選択中の地物。保存せず、再読み込みで解除される UI 状態 */
+/** リロード後に前回の選択が残っても意味がないので、保存せず Zustand に置く */
 type SelectedFeatureStore = {
   selected: MapFeature | null
   select: (feature: MapFeature | null) => void

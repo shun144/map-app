@@ -1,8 +1,8 @@
 import type { LayerState, OverlaySetting } from '../types'
 
 /*
- * レイヤーパネルの操作を「前の状態 → 次の状態」の純粋関数として表す。
- * mutation はこの結果をそのまま保存するだけなので、操作の正しさはここだけ検証すればよい。
+ * 操作を純粋関数に切り出したのは、画面も地図もなしで操作の正しさをテストするため。
+ * mutation はこの結果を保存するだけにする。
  */
 
 export function selectBasemap(
@@ -48,7 +48,6 @@ export function setOverlayOpacity(
   }))
 }
 
-/** 重なり順を1つ上（up）または下（down）へ動かす。端では何もしない */
 export function moveOverlay(
   state: LayerState,
   overlayId: string,

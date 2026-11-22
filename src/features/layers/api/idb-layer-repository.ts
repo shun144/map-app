@@ -1,5 +1,5 @@
 import { parseLayerRecord, toLayerRecord } from './layer-repository'
-import type { AppDatabase } from '#/lib/db'
+import type { AppDatabase } from '#/lib/db/database'
 import type { LayerRepository } from './layer-repository'
 
 export function createIdbLayerRepository(db: AppDatabase): LayerRepository {

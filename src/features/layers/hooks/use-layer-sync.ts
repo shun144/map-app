@@ -1,47 +1,67 @@
 import { useEffect, useRef } from 'react'
-import { useMapPort } from '#/lib/map'
+import { useMapController } from '#/lib/map/map-provider'
 import { useLayerState } from '../api/get-layers'
 import { findBasemap } from '../config/basemaps'
 import { findOverlayDefinition } from '../config/overlay-catalog'
 import { diffLayerState } from '../logic/diff-layer-state'
-import type { MapPort } from '#/lib/map'
+import type { MapController } from '#/lib/map/map-controller'
 import type { LayerState } from '../types'
 
 /**
- * キャッシュ → 地図の一方向同期。ビューポートとは向きが逆（ADR 0001 の Consequences）。
- * 前回反映した状態との差分だけを MapPort に適用する。
+ * レイヤー構成は画面からしか変わらないので、キャッシュを正として地図へ一方向に反映する（ADR 0001）。
+ * 差分だけを適用するのは、全部を描き直すと GeoJSON の再読み込みで地図がちらつくため。
  */
 export function useLayerSync(mapId: string) {
-  const port = useMapPort()
-  const state = useLayerState(mapId)
-  /** どの地図に、どの状態まで反映済みか */
-  const appliedRef = useRef<{ port: MapPort; state: LayerState } | null>(null)
+  const mapController = useMapController()
+  const layerState = useLayerState(mapId)
+  /** state ではなく ref にするのは、反映記録の更新で再描画を起こさないため */
+  const lastAppliedRef = useRef<{
+    mapController: MapController
+    layerState: LayerState
+  } | null>(null)
 
   useEffect(() => {
-    if (!port) return
-    // 地図が作り直されたら空の地図とみなして全部を反映し直す
-    const applied =
-      appliedRef.current?.port === port ? appliedRef.current.state : null
-    const diff = diffLayerState(applied, state)
+    if (!mapController) return
+    // 作り直された地図（HMR など）は空なので、前回分と比べると「差分なし」になり何も描かれない。
+    // 別の地図なら前回分なしとして全部を反映し直す
+    const lastAppliedLayerState =
+      lastAppliedRef.current?.mapController === mapController
+        ? lastAppliedRef.current.layerState
+        : null
+    const layerStateDiff = diffLayerState(lastAppliedLayerState, layerState)
 
-    if (diff.basemapId) port.setBasemap(findBasemap(diff.basemapId))
-    for (const change of diff.overlayChanges) {
-      switch (change.type) {
+    if (layerStateDiff.basemapId) {
+      mapController.setBasemap(findBasemap(layerStateDiff.basemapId))
+    }
+    for (const overlayChange of layerStateDiff.overlayChanges) {
+      switch (overlayChange.type) {
         case 'add': {
-          const definition = findOverlayDefinition(change.overlayId)
-          if (definition) port.addOverlay(definition, change.appearance)
+          const overlayDefinition = findOverlayDefinition(
+            overlayChange.overlayId,
+          )
+          if (overlayDefinition) {
+            mapController.addOverlay(
+              overlayDefinition,
+              overlayChange.appearance,
+            )
+          }
           break
         }
         case 'remove':
-          port.removeOverlay(change.overlayId)
+          mapController.removeOverlay(overlayChange.overlayId)
           break
         case 'update':
-          port.updateOverlay(change.overlayId, change.appearance)
+          mapController.updateOverlay(
+            overlayChange.overlayId,
+            overlayChange.appearance,
+          )
           break
       }
     }
-    if (diff.overlayOrder) port.setOverlayOrder(diff.overlayOrder)
+    if (layerStateDiff.overlayOrder) {
+      mapController.setOverlayOrder(layerStateDiff.overlayOrder)
+    }
 
-    appliedRef.current = { port, state }
-  }, [port, state])
+    lastAppliedRef.current = { mapController, layerState }
+  }, [mapController, layerState])
 }

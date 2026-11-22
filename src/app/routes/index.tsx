@@ -1,21 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { MapCanvas } from '#/lib/map'
 import { DEFAULT_MAP_ID } from '#/config/map'
-import {
-  ResetViewportButton,
-  useSavedViewport,
-  useViewportSync,
-  viewportQueryOptions,
-} from '#/features/viewport'
-import { LayerPanel, layersQueryOptions, useLayerSync } from '#/features/layers'
-import { FeatureInfoPanel, useFeatureSelection } from '#/features/feature-info'
+import { viewportQueryOptions } from '#/features/viewport/api/get-viewport'
+import { layersQueryOptions } from '#/features/layers/api/get-layers'
+import { MapPage } from '../pages/map-page'
 
-/*
- * ルートは features を並べて配線するだけの薄い層。
- * feature 同士は互いを知らず、MapPort（lib/map）を介して同じ地図を共有する。
- */
 export const Route = createFileRoute('/')({
-  // 保存データを読み終えてから描画する。地図は保存位置で生成され、初期位置からのちらつきが出ない
+  // 描画前に読み込むのは、地図を最初から保存位置で生成し、初期位置から飛ぶちらつきを出さないため
   loader: ({ context: { queryClient, repositories } }) =>
     Promise.all([
       queryClient.ensureQueryData(
@@ -36,26 +26,3 @@ export const Route = createFileRoute('/')({
   ),
   component: MapPage,
 })
-
-function MapPage() {
-  const savedViewport = useSavedViewport(DEFAULT_MAP_ID)
-
-  useViewportSync(DEFAULT_MAP_ID)
-  useLayerSync(DEFAULT_MAP_ID)
-  useFeatureSelection()
-
-  return (
-    <main className="relative h-dvh w-full overflow-hidden">
-      <MapCanvas initialViewport={savedViewport} className="absolute inset-0" />
-      <div className="absolute top-3 left-3 max-h-[calc(100%-1.5rem)] overflow-y-auto">
-        <LayerPanel mapId={DEFAULT_MAP_ID} />
-      </div>
-      <div className="absolute top-3 right-3 max-h-[calc(100%-1.5rem)] overflow-y-auto">
-        <FeatureInfoPanel />
-      </div>
-      <div className="absolute right-14 bottom-8">
-        <ResetViewportButton mapId={DEFAULT_MAP_ID} />
-      </div>
-    </main>
-  )
-}

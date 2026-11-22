@@ -7,7 +7,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { AddLayerObject, MapMouseEvent } from 'maplibre-gl'
-import type { MapFactory, MapPort } from '../map-port'
+import type { MapFactory, MapController } from '../map-controller'
 import type {
   BasemapDefinition,
   MapFeature,
@@ -16,10 +16,7 @@ import type {
   Viewport,
 } from '../types'
 
-/*
- * MapLibre GL JS 専用のコードはこのフォルダの外へ出さない（ADR 0002, ESLint で強制）。
- * ここでは MapPort の各操作を MapLibre のソース/レイヤー操作へ翻訳する。
- */
+// MapLibre 専用のコードはこのフォルダの外へ出さない（ADR 0002, ESLint で強制）
 
 /*
  * MapLibre v6 は Worker を「自分のファイルの隣（import.meta.url 基準）」に探す。
@@ -28,14 +25,14 @@ import type {
  */
 setWorkerUrl(maplibreWorkerUrl)
 
-type PaintProperty =Parameters<MapLibreMap['setPaintProperty']>[1]
+type PaintProperty = Parameters<MapLibreMap['setPaintProperty']>[1]
 
 const BASEMAP_SOURCE_ID = 'basemap'
 const BASEMAP_LAYER_ID = 'basemap'
 
 const overlaySourceId = (overlayId: string) => `overlay:${overlayId}`
 
-/** 1つのオーバーレイを構成する MapLibre レイヤーの ID（面は塗り＋輪郭の2枚） */
+/** 面を塗りと輪郭の2枚に分けるのは、MapLibre の fill レイヤーでは輪郭線の太さを指定できないため */
 function overlayLayerIds(definition: OverlayDefinition): Array<string> {
   const base = `overlay:${definition.id}`
   return definition.geometryKind === 'polygon'
@@ -138,7 +135,7 @@ export const createMapLibreMap: MapFactory = (
     pending.splice(0).forEach((operation) => operation())
   })
 
-  /** 現在地図に載っているオーバーレイ（下→上の順） */
+  /** MapLibre のレイヤーからは定義（ラベルなど）を逆引きできないので、自前で持つ。順序は下→上 */
   const overlays = new Map<string, OverlayDefinition>()
   let overlayOrder: Array<string> = []
 
@@ -173,12 +170,12 @@ export const createMapLibreMap: MapFactory = (
     }
   }
 
-  // 地物の上ではカーソルを指マークにする
+  // クリックできる場所だと分かるように、地物の上ではカーソルを変える
   map.on('mousemove', (event) => {
     map.getCanvas().style.cursor = findFeature(event) ? 'pointer' : ''
   })
 
-  const port: MapPort = {
+  const mapController: MapController = {
     getViewport: readViewport,
 
     setViewport: (viewport) => {
@@ -206,7 +203,7 @@ export const createMapLibreMap: MapFactory = (
           maxzoom: basemap.maxZoom,
           attribution: basemap.attribution,
         })
-        // ベースマップは常に最下層（最初のオーバーレイより下）に差し込む
+        // 後から差し替えたベースマップがオーバーレイを覆い隠さないよう、最初のオーバーレイの下に差し込む
         map.addLayer(
           { id: BASEMAP_LAYER_ID, type: 'raster', source: BASEMAP_SOURCE_ID },
           firstOverlayLayerId(),
@@ -243,7 +240,7 @@ export const createMapLibreMap: MapFactory = (
       whenReady(() => {
         const definition = overlays.get(overlayId)
         if (!definition) return
-        // レイヤーを作り直す代わりに、変わりうるプロパティだけを書き換える
+        // レイヤーを作り直すと GeoJSON の再取得でちらつくため、変わりうるプロパティだけを書き換える
         buildOverlayLayers(definition, appearance).forEach((layer) => {
           if (!('layout' in layer) || !('paint' in layer)) return
           map.setLayoutProperty(
@@ -281,5 +278,5 @@ export const createMapLibreMap: MapFactory = (
     destroy: () => map.remove(),
   }
 
-  return port
+  return mapController
 }

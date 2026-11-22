@@ -1,20 +1,20 @@
 import { useCallback } from 'react'
-import { useMapPort } from '#/lib/map'
+import { useMapController } from '#/lib/map/map-provider'
 import { useSaveViewport } from '../api/save-viewport'
-import type { Viewport } from '#/lib/map'
+import type { Viewport } from '#/lib/map/types'
 
 /**
- * 明示的な移動操作。ADR 0001 の例外で、キャッシュの値を地図へ反映する数少ない経路。
- * 先にキャッシュ・保存先を更新してから地図を動かす。
+ * ADR 0001 の例外として、キャッシュの値を地図へ反映する。
+ * 利用者が明示的に頼んだ移動なので、操作中の地図の値を上書きしてしまう心配がない。
  */
 export function useMoveToViewport(mapId: string) {
-  const port = useMapPort()
+  const mapController = useMapController()
   const { mutate } = useSaveViewport(mapId)
   return useCallback(
     (viewport: Viewport) => {
       mutate(viewport)
-      port?.setViewport(viewport)
+      mapController?.setViewport(viewport)
     },
-    [mutate, port],
+    [mutate, mapController],
   )
 }

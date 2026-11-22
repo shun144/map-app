@@ -1,16 +1,12 @@
-import { openAppDatabase } from '#/lib/db'
-import {
-  createIdbViewportRepository,
-  createMemoryViewportRepository,
-} from '#/features/viewport'
-import {
-  createIdbLayerRepository,
-  createMemoryLayerRepository,
-} from '#/features/layers'
-import type { ViewportRepository } from '#/features/viewport'
-import type { LayerRepository } from '#/features/layers'
+import { openAppDatabase } from '#/lib/db/database'
+import { createIdbViewportRepository } from '#/features/viewport/api/idb-viewport-repository'
+import { createMemoryViewportRepository } from '#/features/viewport/api/memory-viewport-repository'
+import { createIdbLayerRepository } from '#/features/layers/api/idb-layer-repository'
+import { createMemoryLayerRepository } from '#/features/layers/api/memory-layer-repository'
+import type { ViewportRepository } from '#/features/viewport/api/viewport-repository'
+import type { LayerRepository } from '#/features/layers/api/layer-repository'
 
-/** アプリが使う保存先の一式。保存先の差し替えはこのファイルだけで完結する */
+/** 保存先の選択をここに集めるのは、保存先を替えるときに features 側を触らずに済ませるため */
 export type Repositories = {
   viewport: ViewportRepository
   layers: LayerRepository
@@ -24,7 +20,7 @@ export async function createRepositories(): Promise<Repositories> {
       layers: createIdbLayerRepository(db),
     }
   } catch (error) {
-    // プライベートブラウズなど IndexedDB が使えない環境ではメモリに保存する
+    // IndexedDB が開けなくても地図は使えるべきなので、保存を諦めてメモリで動かす（リロードで消える）
     console.warn(
       'IndexedDB を開けないため、保存先をメモリに切り替えます',
       error,

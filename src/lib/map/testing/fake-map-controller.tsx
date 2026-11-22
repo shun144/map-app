@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { MapContext } from '../map-context'
 import type { ReactNode } from 'react'
-import type { MapPort } from '../map-port'
+import type { MapController } from '../map-controller'
 import type {
   BasemapDefinition,
   MapFeature,
@@ -11,25 +11,26 @@ import type {
 } from '../types'
 
 /**
- * テスト用の MapPort。実際の描画は行わず、呼び出された操作を記録する。
- * 地図ライブラリを MapPort の裏に隠したことで、同期ロジックをこれだけで検証できる。
+ * 地図ライブラリを MapController の裏に隠したので、本物の地図（WebGL）なしで同期ロジックを検証できる。
+ * そのため描画はせず、呼ばれた操作を記録するだけにする。
  */
-export type FakeMapPort = MapPort & {
+export type FakeMapController = MapController & {
   calls: Array<{ method: string; args: Array<unknown> }>
   basemap: BasemapDefinition | null
   overlays: Map<string, OverlayAppearance>
   overlayOrder: Array<string>
-  /** 利用者が地図を動かし終えたことを再現する */
   emitViewportChange: (viewport: Viewport) => void
   emitFeatureClick: (feature: MapFeature | null) => void
 }
 
-export function createFakeMapPort(initialViewport: Viewport): FakeMapPort {
+export function createFakeMapController(
+  initialViewport: Viewport,
+): FakeMapController {
   let viewport = initialViewport
   const viewportListeners = new Set<(viewport: Viewport) => void>()
   const clickListeners = new Set<(feature: MapFeature | null) => void>()
 
-  const fake: FakeMapPort = {
+  const fake: FakeMapController = {
     calls: [],
     basemap: null,
     overlays: new Map(),
@@ -87,23 +88,23 @@ export function createFakeMapPort(initialViewport: Viewport): FakeMapPort {
   return fake
 }
 
-/** MapCanvas を使わずに、渡した MapPort を配る Provider */
+/** テストでは DOM に地図を作れないため、作成済みの MapController を直接配る */
 export function FakeMapProvider({
-  port,
+  mapController,
   children,
 }: {
-  port: MapPort | null
+  mapController: MapController | null
   children: ReactNode
 }) {
   const value = useMemo(
     () => ({
-      port,
+      mapController,
       createMap: () => {
         throw new Error('FakeMapProvider では地図を生成しません')
       },
-      registerPort: () => {},
+      setMapController: () => {},
     }),
-    [port],
+    [mapController],
   )
   return <MapContext value={value}>{children}</MapContext>
 }

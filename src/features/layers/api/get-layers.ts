@@ -7,7 +7,7 @@ import type { LayerRepository } from './layer-repository'
 
 export const layersQueryKey = (mapId: string) => ['layers', mapId] as const
 
-/** キャッシュ上のレイヤー構成が正（ADR 0001 の Consequences） */
+/** カタログとの突き合わせを Repository ではなくここで行うのは、保存先の実装ごとに同じ処理を書かないため */
 export const layersQueryOptions = (
   repository: LayerRepository,
   mapId: string,

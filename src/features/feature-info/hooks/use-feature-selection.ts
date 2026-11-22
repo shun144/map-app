@@ -1,14 +1,13 @@
 import { useEffect } from 'react'
-import { useMapPort } from '#/lib/map'
+import { useMapController } from '#/lib/map/map-provider'
 import { useSelectedFeatureStore } from '../stores/selected-feature-store'
 
-/** 地図のクリックを選択中の地物に反映する。何もない場所のクリックで選択解除 */
 export function useFeatureSelection() {
-  const port = useMapPort()
+  const mapController = useMapController()
   const select = useSelectedFeatureStore((store) => store.select)
 
   useEffect(() => {
-    if (!port) return
-    return port.onFeatureClick(select)
-  }, [port, select])
+    if (!mapController) return
+    return mapController.onFeatureClick(select)
+  }, [mapController, select])
 }

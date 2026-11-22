@@ -1,4 +1,4 @@
-import type { BasemapDefinition } from '#/lib/map'
+import type { BasemapDefinition } from '#/lib/map/types'
 
 const GSI_ATTRIBUTION =
   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'

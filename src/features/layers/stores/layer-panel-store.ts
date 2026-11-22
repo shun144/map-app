@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-/** レイヤーパネルの開閉。保存しない UI 状態なので Zustand に置く */
+/** リロード後まで覚える必要がないので、保存する状態（TanStack Query）ではなく Zustand に置く */
 type LayerPanelStore = {
   open: boolean
   toggle: () => void

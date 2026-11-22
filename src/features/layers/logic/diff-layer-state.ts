@@ -1,4 +1,4 @@
-import type { OverlayAppearance } from '#/lib/map'
+import type { OverlayAppearance } from '#/lib/map/types'
 import type { LayerState, OverlaySetting } from '../types'
 
 export type OverlayChange =
@@ -22,10 +22,7 @@ const appearanceOf = ({
   opacity,
 })
 
-/**
- * 前回地図へ反映した状態（prev）と、キャッシュの最新状態（next）の差分。
- * prev が null のときは「地図が空」とみなし、すべてを追加する。
- */
+/** prev が null のときは地図が空とみなし、すべてを追加として返す */
 export function diffLayerState(
   prev: LayerState | null,
   next: LayerState,

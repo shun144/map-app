@@ -1,23 +1,19 @@
 import { useContext, useMemo, useState } from 'react'
 import { MapContext } from './map-context'
 import type { ReactNode } from 'react'
-import type { MapFactory, MapPort } from './map-port'
+import type { MapFactory, MapController } from './map-controller'
 
-type MapProviderProps = {
-  /** どの地図ライブラリで地図を作るか。差し替えはここだけで行う */
+type Props = {
   createMap: MapFactory
   children: ReactNode
 }
 
-/**
- * 地図インスタンス（MapPort）を保持して配る。
- * インスタンスの生成は MapCanvas が DOM にマウントされたときに行う。
- */
-export function MapProvider({ createMap, children }: MapProviderProps) {
-  const [port, setPort] = useState<MapPort | null>(null)
+/** ref ではなく state に入れるのは、地図ができたことを使う側に再描画で知らせるため */
+export function MapProvider({ createMap, children }: Props) {
+  const [mapController, setMapController] = useState<MapController | null>(null)
   const value = useMemo(
-    () => ({ port, createMap, registerPort: setPort }),
-    [port, createMap],
+    () => ({ mapController, createMap, setMapController }),
+    [mapController, createMap],
   )
   return <MapContext value={value}>{children}</MapContext>
 }
@@ -30,9 +26,9 @@ function useMapContext() {
   return context
 }
 
-/** 地図の準備ができるまでは null を返す */
-export function useMapPort(): MapPort | null {
-  return useMapContext().port
+/** MapCanvas のマウント前は地図が存在しないため null になりうる */
+export function useMapController(): MapController | null {
+  return useMapContext().mapController
 }
 
 export { useMapContext }

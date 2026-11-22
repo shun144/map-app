@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { reconcileLayerState } from './reconcile-layer-state'
-import type { BasemapDefinition, OverlayDefinition } from '#/lib/map'
+import type { BasemapDefinition, OverlayDefinition } from '#/lib/map/types'
 
 const overlay = (id: string): OverlayDefinition => ({
   id,

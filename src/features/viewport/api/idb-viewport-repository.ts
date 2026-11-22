@@ -1,5 +1,5 @@
 import { parseViewportRecord, toViewportRecord } from './viewport-repository'
-import type { AppDatabase } from '#/lib/db'
+import type { AppDatabase } from '#/lib/db/database'
 import type { ViewportRepository } from './viewport-repository'
 
 export function createIdbViewportRepository(

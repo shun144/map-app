@@ -1,14 +1,11 @@
-import type { BasemapDefinition, OverlayDefinition } from '#/lib/map'
+import type { BasemapDefinition, OverlayDefinition } from '#/lib/map/types'
 import type { LayerState, OverlaySetting } from '../types'
 
 export const DEFAULT_OVERLAY_OPACITY = 1
 
 /**
- * 保存データをいまのカタログに合わせ込む。
- * - カタログから消えたオーバーレイの設定は捨てる
- * - カタログに増えたオーバーレイは非表示で最上位に足す
- * - 存在しないベースマップはデフォルトに戻す
- * - 保存データがなければ全オーバーレイ非表示の初期状態を作る
+ * アプリの更新でカタログやベースマップが変わっても、古い保存データで起動が壊れないように合わせ込む。
+ * 新しく増えたオーバーレイを非表示で足すのは、利用者が選んでいない層を勝手に表示しないため。
  */
 export function reconcileLayerState(
   stored: LayerState | null,

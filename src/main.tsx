@@ -7,7 +7,8 @@ import { createAppRouter } from '#/app/router'
 
 async function bootstrap() {
   const queryClient = createQueryClient()
-  // 同じ Repository を React（Provider）とルーター（loader）の両方に渡す
+  // loader は React の外で動き Context を読めないため、ルーター経由でも渡す。
+  // 同じインスタンスにするのは、loader が読む保存先と mutation が書く保存先を食い違わせないため
   const repositories = await createRepositories()
   const router = createAppRouter({ queryClient, repositories })
 

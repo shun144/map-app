@@ -9,14 +9,14 @@ import { tanstackConfig } from '@tanstack/eslint-config'
  * 依存の向きを機械的に守らせるルール（README「依存ルール」参照）。
  *   lib / config（shared） → features → app
  * - features 同士は import しない。共有したいものは lib へ下ろすか、app で配線する
- * - feature の外から使えるのは各 feature の index.ts だけ
+ * - バレルファイル（index.ts）は使わず、実体のファイルを直接 import する
  * - maplibre-gl を import できるのは lib/map/maplibre だけ（ADR 0002）
  */
 
 const maplibreOnlyInAdapter = {
   group: ['maplibre-gl', 'maplibre-gl/*'],
   message:
-    '地図ライブラリは MapPort（#/lib/map）経由で使ってください。直接 import できるのは src/lib/map/maplibre だけです（ADR 0002）。',
+    '地図ライブラリは MapController（#/lib/map/map-controller）経由で使ってください。直接 import できるのは src/lib/map/maplibre だけです（ADR 0002）。',
 }
 
 const noAppFromBelow = {
@@ -55,10 +55,10 @@ export default [
             {
               regex: '^#/features/',
               message:
-                'feature 同士は import できません。共有するものは lib へ移すか、app/routes で組み合わせてください。',
+                'feature 同士は import できません。共有するものは lib へ移すか、app/pages で組み合わせてください。',
             },
             {
-              // features/<name>/<dir>/file.ts から ../../ で feature の外へ出るのを禁止
+              // ファイルは features/<name>/<dir>/ の深さにあるので、../../ は feature の外を指す
               group: ['../../*'],
               message:
                 '相対パスで feature の外へ出ないでください。shared は #/lib などの別名で import します。',
@@ -82,24 +82,6 @@ export default [
               regex: '^(#/features(/|$)|(\\.\\./)+features/)',
               message:
                 'shared 層（lib / config）は features に依存できません。',
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ['src/app/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            maplibreOnlyInAdapter,
-            {
-              regex: '^#/features/[^/]+/.+',
-              message:
-                'feature の内部ファイルを直接 import しないでください。#/features/<name>（index.ts）から import します。',
             },
           ],
         },

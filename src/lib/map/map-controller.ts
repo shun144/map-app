@@ -9,11 +9,10 @@ import type {
 export type Unsubscribe = () => void
 
 /**
- * アプリが地図に対して行える操作の全集合。
- * features はこのインターフェース越しにのみ地図を操作する（ADR 0002）。
- * 足りない操作が出たら、生インスタンスを露出させずにここへメソッドを追加する。
+ * features が地図ライブラリに依存しないよう、地図への操作はこのインターフェース越しに限る（ADR 0002）。
+ * 足りない操作は、生インスタンスを露出させずにここへメソッドを追加する。
  */
-export interface MapPort {
+export interface MapController {
   /** 操作中を含む現在のビューポート */
   getViewport: () => Viewport
   /** 明示的な移動操作。moveend も発火する */
@@ -40,8 +39,8 @@ export interface MapPort {
   destroy: () => void
 }
 
-/** 地図ライブラリの差し替え口。app 層でどの実装を使うかを決める */
+/** Provider を置く時点では地図を描く DOM がまだないため、完成品ではなく「作り方」を渡す */
 export type MapFactory = (
   container: HTMLElement,
   options: { initialViewport: Viewport },
-) => MapPort
+) => MapController

@@ -4,9 +4,8 @@ import { useLayerRepository } from './repository-context'
 import type { LayerState } from '../types'
 
 /**
- * レイヤー構成を楽観的更新で書き換える。
- * キャッシュを先に書き換えるので、地図への反映（useLayerSync）は保存の完了を待たない。
- * 保存に失敗したら元の状態に戻し、地図も差分同期で元に戻る。
+ * 保存の完了を待つと、切り替えやスライダーが書き込みの分だけ遅れて見えるため、キャッシュを先に書き換える。
+ * 保存に失敗したらキャッシュを戻すだけでよい。地図は useLayerSync の差分同期で自動的に戻る。
  */
 export function useUpdateLayers(mapId: string) {
   const repository = useLayerRepository()

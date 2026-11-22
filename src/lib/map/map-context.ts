@@ -1,10 +1,10 @@
 import { createContext } from 'react'
-import type { MapFactory, MapPort } from './map-port'
+import type { MapFactory, MapController } from './map-controller'
 
 export type MapContextValue = {
-  port: MapPort | null
+  mapController: MapController | null
   createMap: MapFactory
-  registerPort: (port: MapPort | null) => void
+  setMapController: (mapController: MapController | null) => void
 }
 
 export const MapContext = createContext<MapContextValue | null>(null)

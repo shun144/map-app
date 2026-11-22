@@ -1,9 +1,6 @@
 import type { LayerState } from '../types'
 
-/**
- * レイヤー構成の保存先の窓口。保存先を替えるときはこれを満たす実装を作り、app 層で差し替える。
- * カタログとの合わせ込みは Repository ではなくクエリ側で行う（保存先ごとに重複させないため）。
- */
+/** 保存先を IndexedDB 以外（サーバー API など）に替えられるよう、features はこの型にだけ依存する */
 export interface LayerRepository {
   /** 保存データがない・壊れている・版が古いときは null */
   load: (mapId: string) => Promise<LayerState | null>
@@ -31,7 +28,7 @@ function isOverlaySetting(value: unknown): boolean {
   )
 }
 
-/** 保存先から読んだ値を検証し、使えない値は null にする */
+/** 保存データは古い版や壊れた値の可能性があるため、型を信用せず中身を確かめる */
 export function parseLayerRecord(value: unknown): LayerState | null {
   if (typeof value !== 'object' || value === null) return null
   const record = value as Partial<LayerRecord>

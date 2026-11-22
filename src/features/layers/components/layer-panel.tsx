@@ -20,7 +20,7 @@ export function LayerPanel({ mapId }: { mapId: string }) {
   const apply = (operation: (current: LayerState) => LayerState) =>
     mutate(operation(state))
 
-  // 画面では上にあるものほど上に描かれるよう、最上位から並べる
+  // 保存上は先頭が最下層だが、パネルでは手前に描かれるものを上に見せたいので逆順で表示する
   const overlaysTopFirst = [...state.overlays].reverse()
 
   return (

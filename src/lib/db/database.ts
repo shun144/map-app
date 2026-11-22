@@ -2,8 +2,8 @@ import { openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 
 /*
- * IndexedDB の接続とスキーマ（オブジェクトストアの一覧）だけを持つ。
- * 値の型は各 feature の Repository が検証する。shared 層が feature の型を知らないよう unknown にしている。
+ * 値の型を unknown にしているのは、shared 層が feature の型を知らないようにするため。
+ * 中身の検証は各 feature の Repository が行う。
  */
 
 const DB_NAME = 'map-project'
