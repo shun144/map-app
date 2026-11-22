@@ -1,5 +1,5 @@
 import type { OverlayAppearance } from '#/lib/map/types'
-import type { LayerState, OverlaySetting } from '../types'
+import type { LayerState, OverlaySetting } from '#/shared/map/types'
 
 export type OverlayChange =
   | { type: 'add'; overlayId: string; appearance: OverlayAppearance }

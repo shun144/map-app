@@ -2,12 +2,12 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { createQueryClient } from '#/lib/query-client'
-import { viewportQueryKey } from './get-viewport'
-import { createMemoryMapStateRepository } from './memory-map-state-repository'
-import { MapStateRepositoryProvider } from './repository-context'
+import { viewportQueryKey } from '#/shared/map/storage/fetch-viewport'
+import { createMemoryMapStateRepository } from '#/shared/map/storage/memory-map-state-repository'
+import { MapStateRepositoryProvider } from '#/shared/map/storage/repository-context'
 import { useSaveMapState } from './save-map-state'
 import type { ReactNode } from 'react'
-import type { SavedMapState } from './map-state-repository'
+import type { SavedMapState } from '#/shared/map/storage/map-state-repository'
 
 const loadedViewport = { center: { lng: 139.76, lat: 35.68 }, zoom: 12 }
 const savedMapState: SavedMapState = {

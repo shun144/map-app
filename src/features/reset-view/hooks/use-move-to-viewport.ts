@@ -4,8 +4,7 @@ import type { Viewport } from '#/lib/map/types'
 
 /**
  * ADR 0001 の例外として、アプリ側から地図を動かす。
- * キャッシュは書き換えない。キャッシュのビューポートは「保存した値」を表すので、
- * 保存ボタンを押すまでは動かした先を反映しない。
+ * 動かすだけで保存はしない。どの表示状態を残すかは利用者が保存ボタンで決めるため（ADR 0003）。
  */
 export function useMoveToViewport() {
   const mapController = useMapController()

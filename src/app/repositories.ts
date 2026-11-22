@@ -1,7 +1,7 @@
 import { openAppDatabase } from '#/lib/db/database'
-import { createIdbMapStateRepository } from '#/features/map-viewer/api/idb-map-state-repository'
-import { createMemoryMapStateRepository } from '#/features/map-viewer/api/memory-map-state-repository'
-import type { MapStateRepository } from '#/features/map-viewer/api/map-state-repository'
+import { createIdbMapStateRepository } from '#/shared/map/storage/idb-map-state-repository'
+import { createMemoryMapStateRepository } from '#/shared/map/storage/memory-map-state-repository'
+import type { MapStateRepository } from '#/shared/map/storage/map-state-repository'
 
 /** 保存先の選択をここに集めるのは、保存先を替えるときに features 側を触らずに済ませるため */
 export type Repositories = {

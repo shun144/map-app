@@ -12,12 +12,12 @@ import {
   FakeMapProvider,
   createFakeMapController,
 } from '#/lib/map/testing/fake-map-controller'
-import { layersQueryKey } from '../api/get-layers'
-import { createMemoryMapStateRepository } from '../api/memory-map-state-repository'
-import { MapStateRepositoryProvider } from '../api/repository-context'
+import { layersQueryKey } from '#/shared/map/layer-state/fetch-layers'
+import { createMemoryMapStateRepository } from '#/shared/map/storage/memory-map-state-repository'
+import { MapStateRepositoryProvider } from '#/shared/map/storage/repository-context'
 import { SaveMapStateButton } from './save-map-state-button'
 import type { MapController } from '#/lib/map/map-controller'
-import type { LayerState } from '../types'
+import type { LayerState } from '#/shared/map/types'
 
 const loadedViewport = { center: { lng: 139.76, lat: 35.68 }, zoom: 12 }
 const movedViewport = { center: { lng: 139.7, lat: 35.6 }, zoom: 14 }

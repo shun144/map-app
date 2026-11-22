@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { layersQueryKey } from './get-layers'
+import { layersQueryKey } from './fetch-layers'
 import type { LayerState } from '../types'
 
 /**

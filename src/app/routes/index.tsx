@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DEFAULT_MAP_ID } from '#/config/map'
-import { viewportQueryOptions } from '#/features/map-viewer/api/get-viewport'
-import { layersQueryOptions } from '#/features/map-viewer/api/get-layers'
+import { viewportQueryOptions } from '#/shared/map/storage/fetch-viewport'
+import { layersQueryOptions } from '#/shared/map/layer-state/fetch-layers'
 import { MapPage } from '../pages/map-page'
 
 export const Route = createFileRoute('/')({

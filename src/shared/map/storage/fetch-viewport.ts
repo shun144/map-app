@@ -1,5 +1,5 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
-import { DEFAULT_VIEWPORT } from '../config/default-viewport'
+import { DEFAULT_VIEWPORT } from '#/config/default-viewport'
 import { useMapStateRepository } from './repository-context'
 import type { MapStateRepository } from './map-state-repository'
 

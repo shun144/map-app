@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { viewportQueryKey } from './get-viewport'
-import { useMapStateRepository } from './repository-context'
-import type { SavedMapState } from './map-state-repository'
+import { viewportQueryKey } from '#/shared/map/storage/fetch-viewport'
+import { useMapStateRepository } from '#/shared/map/storage/repository-context'
+import type { SavedMapState } from '#/shared/map/storage/map-state-repository'
 
 export function useSaveMapState(mapId: string) {
   const mapStateRepository = useMapStateRepository()

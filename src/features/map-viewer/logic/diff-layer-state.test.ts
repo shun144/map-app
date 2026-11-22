@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { diffLayerState } from './diff-layer-state'
-import type { LayerState } from '../types'
+import type { LayerState } from '#/shared/map/types'
 
 const base: LayerState = {
   basemapId: 'pale',

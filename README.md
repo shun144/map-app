@@ -27,7 +27,7 @@ React + TanStack Router / Query + Zustand + MapLibre GL JS で作る、Bulletpro
 | 地図インスタンス                                   | `MapProvider`（`lib/map`）。`MapController` だけを配る            | —                    | 保存しない                 |
 | ビューポート                                       | 地図インスタンス（キャッシュ `['viewport', mapId]` は保存した値） | **地図インスタンス** | 保存ボタンを押したときだけ |
 | レイヤー構成（ベースマップ＋オーバーレイ表示設定） | TanStack Query `['layers', mapId]`                                | **キャッシュ**       | 保存ボタンを押したときだけ |
-| 選択中の地物・パネル開閉                           | Zustand（`features/map-viewer/stores/`）                          | ストア               | 保存しない                 |
+| 選択中の地物・パネル開閉                           | Zustand（各 feature の `stores/`）                                | ストア               | 保存しない                 |
 
 レイヤー構成はキャッシュが操作中の最新状態を持つ。ビューポートは地図が持ち、地図を動かしてもキャッシュは書き換えない。IndexedDB は「最後に保存した状態」を持つ。保存せずにリロードすると、最後に保存した状態に戻る（[ADR 0003](./docs/adr/0003-save-only-on-explicit-action.md)）。
 
@@ -67,33 +67,39 @@ src/
 │   ├── pages/               画面。feature の部品を並べて配線する
 │   └── routes/              ファイルベースルーティング。URL と画面の対応・loader だけを持つ
 ├── features/                ── features 層：機能ごとに独立。互いに import しない
-│   └── map-viewer/          地図ビューア（ビューポート・レイヤー・地物情報・保存）
-├── lib/                     ── shared 層：features から使われる。features を知らない
+│   ├── map-viewer/          レイヤー構成を地図に反映する・保存ボタン
+│   ├── layer-panel/         レイヤーパネル（保存ボタンは children で受け取る）
+│   ├── feature-info/        地物の選択と情報パネル
+│   └── reset-view/          初期位置に戻る
+├── shared/                  ── shared 層：複数の feature が使う業務の状態。features を知らない
+│   └── map/
+│       ├── types.ts         レイヤー構成の型
+│       ├── catalog/         ベースマップ・オーバーレイのカタログ
+│       ├── layer-state/     レイヤー構成の読み込み（fetch-layers）・書き換え・操作関数・カタログとの突き合わせ
+│       └── storage/         保存先（MapStateRepository・IndexedDB 実装・メモリ実装・Provider）・保存済みビューポートの読み込み（fetch-viewport）
+├── lib/                     ── lib 層：ライブラリを包む部品。shared と features を知らない
 │   ├── map/                 MapController（地図操作の窓口）・MapProvider・MapCanvas
 │   │   ├── maplibre/        MapLibre アダプタ（maplibre-gl を import できる唯一の場所）
 │   │   └── testing/         テスト用の FakeMapController
 │   ├── db/                  IndexedDB の接続とスキーマ
 │   └── query-client.ts
-└── config/                  アプリ全体の定数（地図 ID）
+└── config/                  アプリ全体の定数（地図 ID・初期ビューポート）
 ```
 
 feature の中は役割ごとに分ける（使わないフォルダは作らない）。
 
 ```
 features/map-viewer/
-├── types.ts        レイヤー構成の型
-├── api/            Repository（インターフェース・IndexedDB 実装・メモリ実装・Provider）、クエリ、保存
-├── config/         ベースマップ・オーバーレイカタログ・初期ビューポート
-├── logic/          純粋関数（合わせ込み・操作・差分計算）。テストの主対象
-├── hooks/          地図との同期・移動・地物の選択
-├── stores/         Zustand（保存しない UI 状態）
-└── components/     レイヤーパネル・保存ボタン・地物情報パネル・初期位置に戻るボタン
+├── api/            保存処理（useSaveMapState）
+├── logic/          純粋関数（差分計算）。テストの主対象
+├── hooks/          地図との同期（useLayerSync）
+└── components/     保存ボタン
 ```
 
 ## 依存ルール
 
 ```
-lib / config（shared）  ──▶  features  ──▶  app
+lib / config  ──▶  shared  ──▶  features  ──▶  app
 ```
 
 矢印の向きにだけ import できる。`npm run lint` で機械的に検査する（`eslint.config.js`）。
@@ -102,17 +108,18 @@ lib / config（shared）  ──▶  features  ──▶  app
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `maplibre-gl` を import できるのは `lib/map/maplibre/` だけ | 地図ライブラリを差し替え可能にする（[ADR 0002](./docs/adr/0002-hide-map-library-behind-map-controller.md)） |
 | features 同士は import しない                               | feature を独立に足し引きできるようにする                                                                    |
-| lib / config は features・app を import しない              | shared 層を特定機能に依存させない                                                                           |
+| shared は features・app を import しない                    | 複数の feature が使う状態を、特定の feature に依存させない                                                  |
+| lib / config は shared・features・app を import しない      | ライブラリの包みとアプリ全体の設定を、業務の状態に依存させない                                              |
 
 バレルファイル（`index.ts` で re-export をまとめるファイル）は使わず、実体のファイルを直接 import する。Vite のツリーシェイキングと開発サーバーの速度を落とさないため（Bulletproof React の現行の推奨とも同じ）。
 
-地図インスタンスを feature ではなく `lib/map` に置いているのは、将来 feature が増えても同じ地図を共有できるようにするため。
+置き場所は役割で決める。地図ライブラリを包む部品は `lib`、アプリ全体の設定は `config`、複数の feature が使う業務の状態（レイヤー構成・カタログ・保存先）は `shared` に置く。レイヤーパネルと地図への反映が互いを知らずに済むのは、どちらも `shared/map` のレイヤー構成だけを読み書きしているため。
 
 ## 差し替え方
 
 ### 保存先を替える（例：サーバー API）
 
-1. `features/map-viewer/api/map-state-repository.ts` のインターフェース（`MapStateRepository`）を満たす実装を `api/` に追加する
+1. `shared/map/storage/map-state-repository.ts` のインターフェース（`MapStateRepository`）を満たす実装を `shared/map/storage/` に追加する
 2. `app/repositories.ts` で使う実装を切り替える
 
 クエリ・保存処理・UI は Repository のインターフェースにしか依存していないので変更不要。

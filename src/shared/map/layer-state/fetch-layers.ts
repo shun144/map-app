@@ -1,9 +1,9 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
-import { BASEMAPS, DEFAULT_BASEMAP_ID } from '../config/basemaps'
-import { OVERLAY_CATALOG } from '../config/overlay-catalog'
-import { reconcileLayerState } from '../logic/reconcile-layer-state'
-import { useMapStateRepository } from './repository-context'
-import type { MapStateRepository } from './map-state-repository'
+import { BASEMAPS, DEFAULT_BASEMAP_ID } from '../catalog/basemaps'
+import { OVERLAY_CATALOG } from '../catalog/overlay-catalog'
+import { reconcileLayerState } from './reconcile-layer-state'
+import { useMapStateRepository } from '../storage/repository-context'
+import type { MapStateRepository } from '../storage/map-state-repository'
 
 export const layersQueryKey = (mapId: string) => ['layers', mapId] as const
 

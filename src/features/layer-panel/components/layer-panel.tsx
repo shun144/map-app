@@ -1,18 +1,24 @@
-import { useLayerState } from '../api/get-layers'
-import { useUpdateLayerState } from '../api/update-layers'
-import { BASEMAPS } from '../config/basemaps'
-import { findOverlayDefinition } from '../config/overlay-catalog'
+import { useLayerState } from '#/shared/map/layer-state/fetch-layers'
+import { useUpdateLayerState } from '#/shared/map/layer-state/update-layers'
+import { BASEMAPS } from '#/shared/map/catalog/basemaps'
+import { findOverlayDefinition } from '#/shared/map/catalog/overlay-catalog'
 import {
   moveOverlay,
   selectBasemap,
   setOverlayOpacity,
   setOverlayVisible,
-} from '../logic/layer-operations'
+} from '#/shared/map/layer-state/layer-operations'
 import { useLayerPanelStore } from '../stores/layer-panel-store'
-import { SaveMapStateButton } from './save-map-state-button'
-import type { LayerState } from '../types'
+import type { ReactNode } from 'react'
+import type { LayerState } from '#/shared/map/types'
 
-export function LayerPanel({ mapId }: { mapId: string }) {
+type Props = {
+  mapId: string
+  /** 保存ボタンなど、ほかの feature の部品を差し込む枠。パネルが他の feature を import しないため */
+  children?: ReactNode
+}
+
+export function LayerPanel({ mapId, children }: Props) {
   const layerState = useLayerState(mapId)
   const updateLayerState = useUpdateLayerState(mapId)
   const open = useLayerPanelStore((store) => store.open)
@@ -153,7 +159,7 @@ export function LayerPanel({ mapId }: { mapId: string }) {
             </ul>
           </fieldset>
 
-          <SaveMapStateButton mapId={mapId} />
+          {children}
         </div>
       )}
     </section>

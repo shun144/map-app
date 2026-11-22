@@ -1,4 +1,4 @@
-import { DEFAULT_VIEWPORT } from '../config/default-viewport'
+import { DEFAULT_VIEWPORT } from '#/config/default-viewport'
 import { useMoveToViewport } from '../hooks/use-move-to-viewport'
 
 export function ResetViewportButton() {

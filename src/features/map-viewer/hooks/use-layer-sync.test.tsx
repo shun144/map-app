@@ -6,13 +6,13 @@ import {
   FakeMapProvider,
   createFakeMapController,
 } from '#/lib/map/testing/fake-map-controller'
-import { layersQueryKey } from '../api/get-layers'
-import { createMemoryMapStateRepository } from '../api/memory-map-state-repository'
-import { MapStateRepositoryProvider } from '../api/repository-context'
+import { layersQueryKey } from '#/shared/map/layer-state/fetch-layers'
+import { createMemoryMapStateRepository } from '#/shared/map/storage/memory-map-state-repository'
+import { MapStateRepositoryProvider } from '#/shared/map/storage/repository-context'
 import { useLayerSync } from './use-layer-sync'
 import type { ReactNode } from 'react'
 import type { MapController } from '#/lib/map/map-controller'
-import type { LayerState } from '../types'
+import type { LayerState } from '#/shared/map/types'
 
 const initial: LayerState = {
   basemapId: 'gsi-pale',

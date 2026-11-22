@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useMapController } from '#/lib/map/map-provider'
-import { useLayerState } from '../api/get-layers'
-import { findBasemap } from '../config/basemaps'
-import { findOverlayDefinition } from '../config/overlay-catalog'
+import { useLayerState } from '#/shared/map/layer-state/fetch-layers'
+import { findBasemap } from '#/shared/map/catalog/basemaps'
+import { findOverlayDefinition } from '#/shared/map/catalog/overlay-catalog'
 import { diffLayerState } from '../logic/diff-layer-state'
 import type { MapController } from '#/lib/map/map-controller'
-import type { LayerState } from '../types'
+import type { LayerState } from '#/shared/map/types'
 
 /**
  * レイヤー構成は画面からしか変わらないので、キャッシュを正として地図へ一方向に反映する（ADR 0001）。
