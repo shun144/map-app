@@ -1,6 +1,6 @@
 import { MapCanvas } from '#/lib/map/map-canvas'
 import { DEFAULT_MAP_ID } from '#/config/map'
-import { useSavedViewport } from '#/shared/map/storage/fetch-viewport'
+import { useSavedViewport } from '#/shared/map/api/fetch-map-info'
 import { ResetViewportButton } from '#/features/reset-view/components/reset-viewport-button'
 import { useDrawLayersStateOnMap } from '#/features/map-viewer/hooks/use-draw-layers-state-on-map'
 import { SaveMapSnapshotButton } from '#/features/map-viewer/components/save-map-snapshot-button'

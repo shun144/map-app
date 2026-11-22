@@ -1,5 +1,5 @@
 import { useMapController } from '#/lib/map/map-provider'
-import { useLayersState } from '#/shared/map/layers-state/fetch-layers'
+import { useLayersState } from '#/shared/map/api/fetch-map-info'
 import { useSaveMapSnapshot } from '../api/save-map-snapshot'
 
 const formatTime = (date: Date) =>

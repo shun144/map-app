@@ -1,5 +1,5 @@
-import { useLayersState } from '#/shared/map/layers-state/fetch-layers'
-import { useWriteLayersStateToCache } from '#/shared/map/layers-state/write-layers-state-to-cache'
+import { useLayersState } from '#/shared/map/api/fetch-map-info'
+import { useWriteLayersStateToCache } from '#/shared/map/api/write-layers-state-to-cache'
 import { BASE_LAYERS } from '#/shared/map/catalog/base-layers'
 import { findOverlayerDefinition } from '#/shared/map/catalog/overlayer-catalog'
 import {
@@ -7,7 +7,7 @@ import {
   updateBaseLayer,
   updateOverlayerOpacity,
   updateOverlayerVisibility,
-} from '#/shared/map/layers-state/update-layers'
+} from '#/shared/map/api/update-layers'
 import { useLayerPanelStore } from '../stores/layer-panel-store'
 import type { ReactNode } from 'react'
 import type { Layers } from '#/shared/map/types'

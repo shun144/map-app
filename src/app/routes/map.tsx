@@ -1,20 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DEFAULT_MAP_ID } from '#/config/map'
-import { viewportQueryOptions } from '#/shared/map/storage/fetch-viewport'
-import { layersQueryOptions } from '#/shared/map/layers-state/fetch-layers'
+import { mapInfoQueryOptions } from '#/shared/map/api/fetch-map-info'
 import { MapPage } from '../pages/map-page'
 
 export const Route = createFileRoute('/map')({
   // 描画前に読み込むのは、地図を最初から保存位置で生成し、初期位置から飛ぶちらつきを出さないため
   loader: ({ context: { queryClient, repositories } }) =>
-    Promise.all([
-      queryClient.ensureQueryData(
-        viewportQueryOptions(repositories.mapSnapshot, DEFAULT_MAP_ID),
-      ),
-      queryClient.ensureQueryData(
-        layersQueryOptions(repositories.mapSnapshot, DEFAULT_MAP_ID),
-      ),
-    ]),
+    queryClient.ensureQueryData(
+      mapInfoQueryOptions(repositories.mapSnapshot, DEFAULT_MAP_ID),
+    ),
   pendingComponent: () => (
     <p className="grid h-dvh place-items-center text-slate-500">読み込み中…</p>
   ),

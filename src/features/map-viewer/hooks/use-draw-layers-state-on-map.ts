@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMapController } from '#/lib/map/map-provider'
-import { useLayersState } from '#/shared/map/layers-state/fetch-layers'
+import { useLayersState } from '#/shared/map/api/fetch-map-info'
 import { findBaseLayer } from '#/shared/map/catalog/base-layers'
 import { findOverlayerDefinition } from '#/shared/map/catalog/overlayer-catalog'
 import { findChangesBetweenLayers } from '../logic/find-changes-between-layers'
