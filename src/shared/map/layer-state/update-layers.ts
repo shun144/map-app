@@ -4,7 +4,7 @@ import { layersQueryKey } from './fetch-layers'
 import type { LayerState } from '../types'
 
 /**
- * IndexedDB への保存は保存ボタンに任せる（ADR 0003）ので、ここではキャッシュだけを書き換える。
+ * 保存先への保存は保存ボタンに任せる（ADR 0003）ので、ここではキャッシュだけを書き換える。
  * 地図への反映は、キャッシュの変化を見ている useLayerSync が行う。
  */
 export function useUpdateLayerState(mapId: string) {

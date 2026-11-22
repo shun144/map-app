@@ -7,25 +7,15 @@ export type SavedMapState = {
 }
 
 /**
- * 保存先を IndexedDB 以外（サーバー API など）に替えられるよう、features はこの型にだけ依存する。
+ * 保存先は差し替える前提（ADR 0004）なので、保存先の外のコードはこの型にだけ依存する。
  * ビューポートとレイヤー構成を1レコードにまとめるのは、1回の書き込みで両方を残し、
  * 片方だけ新しい組み合わせで復元される状態を作らないため（ADR 0003）。
+ * 期待する振る舞いは map-state-repository.contract.ts のテストで定義している。
  */
 export interface MapStateRepository {
-  /** 保存データがない・壊れている・版が古いときは null */
+  /** 保存データがない・壊れている・読めない形式のときは null */
   load: (mapId: string) => Promise<SavedMapState | null>
   save: (mapId: string, savedMapState: SavedMapState) => Promise<void>
-}
-
-const MAP_STATE_SCHEMA_VERSION = 1
-
-type MapStateRecord = {
-  schemaVersion: typeof MAP_STATE_SCHEMA_VERSION
-  savedMapState: SavedMapState
-}
-
-export function toMapStateRecord(savedMapState: SavedMapState): MapStateRecord {
-  return { schemaVersion: MAP_STATE_SCHEMA_VERSION, savedMapState }
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -59,22 +49,14 @@ function isLayerState(value: unknown): value is LayerState {
   )
 }
 
-/** 保存データは古い版や壊れた値の可能性があるため、型を信用せず中身を確かめる */
-export function parseMapStateRecord(
-  storedValue: unknown,
-): SavedMapState | null {
-  if (!isRecord(storedValue)) return null
-  if (storedValue.schemaVersion !== MAP_STATE_SCHEMA_VERSION) return null
-  const savedMapState = storedValue.savedMapState
-  if (
-    !isRecord(savedMapState) ||
-    !isViewport(savedMapState.viewport) ||
-    !isLayerState(savedMapState.layerState)
-  ) {
-    return null
-  }
-  return {
-    viewport: savedMapState.viewport,
-    layerState: savedMapState.layerState,
-  }
+/**
+ * 保存先から返る値はアプリの外から来たものなので、どの保存先でも型を信用せず中身を確かめる。
+ * 保存先ごとの形式（版番号など）を外したあとの値を渡す。
+ */
+export function isSavedMapState(value: unknown): value is SavedMapState {
+  return (
+    isRecord(value) &&
+    isViewport(value.viewport) &&
+    isLayerState(value.layerState)
+  )
 }

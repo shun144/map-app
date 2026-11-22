@@ -2,9 +2,10 @@ import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { openDB } from 'idb'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { openAppDatabase } from '#/lib/db/database'
-import { createIdbMapStateRepository } from './idb-map-state-repository'
-import type { SavedMapState } from './map-state-repository'
+import { describeMapStateRepositoryContract } from '../map-state-repository.contract'
+import { openAppDatabase } from './database'
+import { createIndexedDbMapStateRepository } from './indexeddb-map-state-repository'
+import type { SavedMapState } from '../map-state-repository'
 
 const savedMapState: SavedMapState = {
   viewport: { center: { lng: 139.7, lat: 35.6 }, zoom: 10 },
@@ -19,23 +20,14 @@ beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
 })
 
-describe('IndexedDB の MapStateRepository', () => {
-  it('ビューポートとレイヤー構成をまとめて保存し、読み戻せる', async () => {
-    const repository = createIdbMapStateRepository(await openAppDatabase())
+describeMapStateRepositoryContract('IndexedDB', async () =>
+  createIndexedDbMapStateRepository(await openAppDatabase()),
+)
 
-    await repository.save('default', savedMapState)
-
-    expect(await repository.load('default')).toEqual(savedMapState)
-  })
-
-  it('保存データがなければ null', async () => {
-    const repository = createIdbMapStateRepository(await openAppDatabase())
-    expect(await repository.load('default')).toBeNull()
-  })
-
+describe('IndexedDB 固有の保存形式', () => {
   it('版の違うデータ・片方が壊れたデータは null として扱う', async () => {
     const db = await openAppDatabase()
-    const repository = createIdbMapStateRepository(db)
+    const repository = createIndexedDbMapStateRepository(db)
 
     await db.put('mapStates', { schemaVersion: 999, savedMapState }, 'old')
     await db.put(

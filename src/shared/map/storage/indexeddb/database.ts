@@ -2,8 +2,8 @@ import { openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 
 /*
- * 値の型を unknown にしているのは、shared 層が feature の型を知らないようにするため。
- * 中身の検証は各 feature の Repository が行う。
+ * 値の型を unknown にしているのは、ブラウザに残っている値は古い版や壊れた値の可能性があり、
+ * 型を付けると検証せずに使えてしまうため。検証は indexeddb-map-state-repository.ts で行う。
  */
 
 const DB_NAME = 'map-project'
@@ -20,8 +20,8 @@ export function openAppDatabase(): Promise<AppDatabase> {
     upgrade(db) {
       /*
        * 版 1 はビューポートとレイヤー構成を別々のストアに持っていた。
-       * 2つを1レコードへ移し替えるには shared 層が feature のデータ形式を知る必要があるため、
-       * 移行はせずに捨てる（学習用アプリで、失うのは最後に保存した表示状態だけ）。
+       * IndexedDB は仮の保存先（ADR 0004）で、失うのは最後に保存した表示状態だけなので、
+       * 移し替えの処理は書かずに捨てる。
        */
       // 版 1 のストア名は現在のスキーマ型に含まれないため、型なしの DB として扱う
       const untypedDb = db as unknown as IDBPDatabase
