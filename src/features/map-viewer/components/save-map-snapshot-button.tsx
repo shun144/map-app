@@ -1,6 +1,6 @@
 import { useMapController } from '#/lib/map/map-provider'
-import { useLayerState } from '#/shared/map/layer-state/fetch-layers'
-import { useSaveMapState } from '../api/save-map-state'
+import { useLayersState } from '#/shared/map/layers-state/fetch-layers'
+import { useSaveMapSnapshot } from '../api/save-map-snapshot'
 
 const formatTime = (date: Date) =>
   date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
@@ -9,22 +9,30 @@ type Props = {
   mapId: string
 }
 
-export function SaveMapStateButton({ mapId }: Props) {
+export function SaveMapSnapshotButton({ mapId }: Props) {
   const mapController = useMapController()
-  const layerState = useLayerState(mapId)
-  const { mutate, isPending, isError, data: savedAt } = useSaveMapState(mapId)
+  const layersState = useLayersState(mapId)
+  const {
+    mutate,
+    isPending,
+    isError,
+    data: savedAt,
+  } = useSaveMapSnapshot(mapId)
 
   // ビューポートは押した瞬間の地図から読む。操作中の正は地図にあり、キャッシュには無いため（ADR 0001）
-  const save = () => {
+  const saveCurrentMapSnapshot = () => {
     if (!mapController) return
-    mutate({ viewport: mapController.getViewport(), layerState })
+    mutate({
+      viewport: mapController.getViewport(),
+      layers: layersState,
+    })
   }
 
   return (
     <div className="flex items-center gap-3 border-t border-slate-200 pt-3">
       <button
         type="button"
-        onClick={save}
+        onClick={saveCurrentMapSnapshot}
         disabled={!mapController || isPending}
         className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
       >

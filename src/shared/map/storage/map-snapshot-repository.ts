@@ -1,21 +1,20 @@
 import type { Viewport } from '#/lib/map/types'
-import type { LayerState } from '../types'
+import type { Layers } from '../types'
 
-export type SavedMapState = {
+export type MapSnapshot = {
   viewport: Viewport
-  layerState: LayerState
+  layers: Layers
 }
 
 /**
  * 保存先は差し替える前提（ADR 0004）なので、保存先の外のコードはこの型にだけ依存する。
  * ビューポートとレイヤー構成を1レコードにまとめるのは、1回の書き込みで両方を残し、
  * 片方だけ新しい組み合わせで復元される状態を作らないため（ADR 0003）。
- * 期待する振る舞いは map-state-repository.contract.ts のテストで定義している。
  */
-export interface MapStateRepository {
+export interface MapSnapshotRepository {
   /** 保存データがない・壊れている・読めない形式のときは null */
-  load: (mapId: string) => Promise<SavedMapState | null>
-  save: (mapId: string, savedMapState: SavedMapState) => Promise<void>
+  load: (mapId: string) => Promise<MapSnapshot | null>
+  save: (mapId: string, mapSnapshot: MapSnapshot) => Promise<void>
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -34,17 +33,17 @@ function isViewport(value: unknown): value is Viewport {
   )
 }
 
-function isLayerState(value: unknown): value is LayerState {
+function isLayers(value: unknown): value is Layers {
   return (
     isRecord(value) &&
-    typeof value.basemapId === 'string' &&
-    Array.isArray(value.overlays) &&
-    value.overlays.every(
-      (overlaySetting) =>
-        isRecord(overlaySetting) &&
-        typeof overlaySetting.overlayId === 'string' &&
-        typeof overlaySetting.visible === 'boolean' &&
-        typeof overlaySetting.opacity === 'number',
+    typeof value.baseLayerId === 'string' &&
+    Array.isArray(value.overlayers) &&
+    value.overlayers.every(
+      (overlayerSetting) =>
+        isRecord(overlayerSetting) &&
+        typeof overlayerSetting.overlayerId === 'string' &&
+        typeof overlayerSetting.visible === 'boolean' &&
+        typeof overlayerSetting.opacity === 'number',
     )
   )
 }
@@ -53,10 +52,6 @@ function isLayerState(value: unknown): value is LayerState {
  * 保存先から返る値はアプリの外から来たものなので、どの保存先でも型を信用せず中身を確かめる。
  * 保存先ごとの形式（版番号など）を外したあとの値を渡す。
  */
-export function isSavedMapState(value: unknown): value is SavedMapState {
-  return (
-    isRecord(value) &&
-    isViewport(value.viewport) &&
-    isLayerState(value.layerState)
-  )
+export function isMapSnapshot(value: unknown): value is MapSnapshot {
+  return isRecord(value) && isViewport(value.viewport) && isLayers(value.layers)
 }

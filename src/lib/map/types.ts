@@ -10,7 +10,7 @@ export type Viewport = {
   zoom: number
 }
 
-export type BasemapDefinition = {
+export type BaseLayerDefinition = {
   id: string
   label: string
   /** XYZ タイル URL テンプレート（{z}/{x}/{y}） */
@@ -21,7 +21,7 @@ export type BasemapDefinition = {
 
 export type GeometryKind = 'point' | 'line' | 'polygon'
 
-export type OverlayDefinition = {
+export type OverlayerDefinition = {
   id: string
   label: string
   /** GeoJSON の取得先 URL */
@@ -30,14 +30,14 @@ export type OverlayDefinition = {
   color: string
 }
 
-export type OverlayAppearance = {
+export type OverlayerAppearance = {
   visible: boolean
   /** 0〜1 */
   opacity: number
 }
 
 export type MapFeature = {
-  overlayId: string
-  overlayLabel: string
+  overlayerId: string
+  overlayerLabel: string
   properties: Record<string, unknown>
 }

@@ -1,7 +1,7 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { DEFAULT_VIEWPORT } from '#/config/default-viewport'
-import { useMapStateRepository } from './repository-context'
-import type { MapStateRepository } from './map-state-repository'
+import { useMapSnapshotRepository } from './repository-context'
+import type { MapSnapshotRepository } from './map-snapshot-repository'
 
 export const viewportQueryKey = (mapId: string) => ['viewport', mapId] as const
 
@@ -13,7 +13,7 @@ export const viewportQueryKey = (mapId: string) => ['viewport', mapId] as const
  * 同じキャッシュにすると、保存した値しか見ない地図画面までレイヤー操作のたびに再描画されるため。
  */
 export const viewportQueryOptions = (
-  repository: MapStateRepository,
+  repository: MapSnapshotRepository,
   mapId: string,
 ) =>
   queryOptions({
@@ -23,6 +23,6 @@ export const viewportQueryOptions = (
   })
 
 export function useSavedViewport(mapId: string) {
-  const repository = useMapStateRepository()
+  const repository = useMapSnapshotRepository()
   return useSuspenseQuery(viewportQueryOptions(repository, mapId)).data
 }

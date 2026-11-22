@@ -1,8 +1,8 @@
 import type {
-  BasemapDefinition,
+  BaseLayerDefinition,
   MapFeature,
-  OverlayAppearance,
-  OverlayDefinition,
+  OverlayerAppearance,
+  OverlayerDefinition,
   Viewport,
 } from './types'
 
@@ -17,19 +17,22 @@ export interface MapController {
   getViewport: () => Viewport
   setViewport: (viewport: Viewport) => void
 
-  setBasemap: (basemap: BasemapDefinition) => void
+  setBaseLayer: (baseLayer: BaseLayerDefinition) => void
 
-  addOverlay: (
-    definition: OverlayDefinition,
-    appearance: OverlayAppearance,
+  addOverlayer: (
+    overlayerDefinition: OverlayerDefinition,
+    overlayerAppearance: OverlayerAppearance,
   ) => void
-  removeOverlay: (overlayId: string) => void
-  updateOverlay: (overlayId: string, appearance: OverlayAppearance) => void
+  removeOverlayer: (overlayerId: string) => void
+  updateOverlayerAppearance: (
+    overlayerId: string,
+    overlayerAppearance: OverlayerAppearance,
+  ) => void
   /** 重なり順を指定する。配列の先頭が最下層 */
-  setOverlayOrder: (overlayIds: ReadonlyArray<string>) => void
+  setOverlayerOrder: (overlayerIds: ReadonlyArray<string>) => void
 
   /** 地物のクリック。何もない場所をクリックしたときは null */
-  onFeatureClick: (
+  subscribeToFeatureClick: (
     listener: (feature: MapFeature | null) => void,
   ) => Unsubscribe
 

@@ -9,10 +9,10 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import type { AddLayerObject, MapMouseEvent } from 'maplibre-gl'
 import type { MapFactory, MapController } from '../map-controller'
 import type {
-  BasemapDefinition,
+  BaseLayerDefinition,
   MapFeature,
-  OverlayAppearance,
-  OverlayDefinition,
+  OverlayerAppearance,
+  OverlayerDefinition,
   Viewport,
 } from '../types'
 
@@ -27,80 +27,83 @@ setWorkerUrl(maplibreWorkerUrl)
 
 type PaintProperty = Parameters<MapLibreMap['setPaintProperty']>[1]
 
-const BASEMAP_SOURCE_ID = 'basemap'
-const BASEMAP_LAYER_ID = 'basemap'
+const BASE_LAYER_SOURCE_ID = 'baseLayer'
+const BASE_LAYER_STYLE_LAYER_ID = 'baseLayer'
 
-const overlaySourceId = (overlayId: string) => `overlay:${overlayId}`
+const sourceIdOfOverlayer = (overlayerId: string) => `overlayer:${overlayerId}`
 
-/** 面を塗りと輪郭の2枚に分けるのは、MapLibre の fill レイヤーでは輪郭線の太さを指定できないため */
-function overlayLayerIds(definition: OverlayDefinition): Array<string> {
-  const base = `overlay:${definition.id}`
-  return definition.geometryKind === 'polygon'
-    ? [`${base}:fill`, `${base}:outline`]
-    : [base]
+/** 面を塗りと輪郭の2枚に分けるのは、MapLibre の fill スタイルレイヤーでは輪郭線の太さを指定できないため */
+function styleLayerIdsOfOverlayer(
+  overlayerDefinition: OverlayerDefinition,
+): Array<string> {
+  const styleLayerIdPrefix = `overlayer:${overlayerDefinition.id}`
+  return overlayerDefinition.geometryKind === 'polygon'
+    ? [`${styleLayerIdPrefix}:fill`, `${styleLayerIdPrefix}:outline`]
+    : [styleLayerIdPrefix]
 }
 
-function buildOverlayLayers(
-  definition: OverlayDefinition,
-  appearance: OverlayAppearance,
+function createStyleLayersForOverlayer(
+  overlayerDefinition: OverlayerDefinition,
+  overlayerAppearance: OverlayerAppearance,
 ): Array<AddLayerObject> {
-  const source = overlaySourceId(definition.id)
-  const visibility = appearance.visible ? 'visible' : 'none'
-  const [first, second] = overlayLayerIds(definition)
+  const overlayerSourceId = sourceIdOfOverlayer(overlayerDefinition.id)
+  const visibility = overlayerAppearance.visible ? 'visible' : 'none'
+  const [mainStyleLayerId, outlineStyleLayerId] =
+    styleLayerIdsOfOverlayer(overlayerDefinition)
 
-  switch (definition.geometryKind) {
+  switch (overlayerDefinition.geometryKind) {
     case 'point':
       return [
         {
-          id: first,
+          id: mainStyleLayerId,
           type: 'circle',
-          source,
+          source: overlayerSourceId,
           layout: { visibility },
           paint: {
             'circle-radius': 7,
-            'circle-color': definition.color,
+            'circle-color': overlayerDefinition.color,
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 2,
-            'circle-opacity': appearance.opacity,
-            'circle-stroke-opacity': appearance.opacity,
+            'circle-opacity': overlayerAppearance.opacity,
+            'circle-stroke-opacity': overlayerAppearance.opacity,
           },
         },
       ]
     case 'line':
       return [
         {
-          id: first,
+          id: mainStyleLayerId,
           type: 'line',
-          source,
+          source: overlayerSourceId,
           layout: { visibility, 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': definition.color,
+            'line-color': overlayerDefinition.color,
             'line-width': 4,
-            'line-opacity': appearance.opacity,
+            'line-opacity': overlayerAppearance.opacity,
           },
         },
       ]
     case 'polygon':
       return [
         {
-          id: first,
+          id: mainStyleLayerId,
           type: 'fill',
-          source,
+          source: overlayerSourceId,
           layout: { visibility },
           paint: {
-            'fill-color': definition.color,
-            'fill-opacity': appearance.opacity * 0.4,
+            'fill-color': overlayerDefinition.color,
+            'fill-opacity': overlayerAppearance.opacity * 0.4,
           },
         },
         {
-          id: second,
+          id: outlineStyleLayerId,
           type: 'line',
-          source,
+          source: overlayerSourceId,
           layout: { visibility },
           paint: {
-            'line-color': definition.color,
+            'line-color': overlayerDefinition.color,
             'line-width': 2,
-            'line-opacity': appearance.opacity,
+            'line-opacity': overlayerAppearance.opacity,
           },
         },
       ]
@@ -124,59 +127,69 @@ export const createMapLibreMap: MapFactory = (
    * スタイル読み込み完了前に addSource 等を呼ぶと例外になるため、
    * 完了までの操作はキューに積んで後から順に実行する。
    */
-  let loaded = false
-  const pending: Array<() => void> = []
-  const whenReady = (operation: () => void) => {
-    if (loaded) operation()
-    else pending.push(operation)
+  let styleLoaded = false
+  const operationsWaitingForStyleLoad: Array<() => void> = []
+  const runAfterStyleLoaded = (operationOnMap: () => void) => {
+    if (styleLoaded) operationOnMap()
+    else operationsWaitingForStyleLoad.push(operationOnMap)
   }
   map.once('load', () => {
-    loaded = true
-    pending.splice(0).forEach((operation) => operation())
+    styleLoaded = true
+    operationsWaitingForStyleLoad
+      .splice(0)
+      .forEach((operationOnMap) => operationOnMap())
   })
 
-  /** MapLibre のレイヤーからは定義（ラベルなど）を逆引きできないので、自前で持つ。順序は下→上 */
-  const overlays = new Map<string, OverlayDefinition>()
-  let overlayOrder: Array<string> = []
+  /** MapLibre のスタイルレイヤーからは定義（ラベルなど）を逆引きできないので、自前で持つ。順序は下→上 */
+  const overlayerDefinitionsById = new Map<string, OverlayerDefinition>()
+  let overlayerOrder: Array<string> = []
 
-  const firstOverlayLayerId = (): string | undefined => {
-    const first = overlayOrder.at(0)
-    const definition = first ? overlays.get(first) : undefined
-    return definition ? overlayLayerIds(definition)[0] : undefined
+  const lowestOverlayerStyleLayerId = (): string | undefined => {
+    const lowestOverlayerId = overlayerOrder.at(0)
+    const overlayerDefinition = lowestOverlayerId
+      ? overlayerDefinitionsById.get(lowestOverlayerId)
+      : undefined
+    return overlayerDefinition
+      ? styleLayerIdsOfOverlayer(overlayerDefinition)[0]
+      : undefined
   }
 
-  const readViewport = (): Viewport => {
+  const readViewportFromMap = (): Viewport => {
     const center = map.getCenter()
     return { center: { lng: center.lng, lat: center.lat }, zoom: map.getZoom() }
   }
 
-  const clickableLayerIds = () =>
-    [...overlays.values()]
-      .flatMap(overlayLayerIds)
-      .filter((layerId) => map.getLayer(layerId))
+  const clickableStyleLayerIds = () =>
+    [...overlayerDefinitionsById.values()]
+      .flatMap(styleLayerIdsOfOverlayer)
+      .filter((styleLayerId) => map.getLayer(styleLayerId))
 
-  const findFeature = (event: MapMouseEvent): MapFeature | null => {
-    const layers = clickableLayerIds()
-    if (layers.length === 0) return null
-    const hit = map.queryRenderedFeatures(event.point, { layers }).at(0)
-    if (!hit) return null
-    const overlayId = hit.source.replace(/^overlay:/, '')
-    const definition = overlays.get(overlayId)
-    if (!definition) return null
+  const findFeatureUnderPointer = (event: MapMouseEvent): MapFeature | null => {
+    const styleLayerIds = clickableStyleLayerIds()
+    if (styleLayerIds.length === 0) return null
+    const featureUnderPointer = map
+      .queryRenderedFeatures(event.point, { layers: styleLayerIds })
+      .at(0)
+    if (!featureUnderPointer) return null
+    const overlayerId = featureUnderPointer.source.replace(/^overlayer:/, '')
+    const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
+    if (!overlayerDefinition) return null
     return {
-      overlayId,
-      overlayLabel: definition.label,
-      properties: { ...hit.properties },
+      overlayerId,
+      overlayerLabel: overlayerDefinition.label,
+      properties: { ...featureUnderPointer.properties },
     }
   }
 
   // クリックできる場所だと分かるように、地物の上ではカーソルを変える
   map.on('mousemove', (event) => {
-    map.getCanvas().style.cursor = findFeature(event) ? 'pointer' : ''
+    map.getCanvas().style.cursor = findFeatureUnderPointer(event)
+      ? 'pointer'
+      : ''
   })
 
   const mapController: MapController = {
-    getViewport: readViewport,
+    getViewport: readViewportFromMap,
 
     setViewport: (viewport) => {
       map.easeTo({
@@ -185,86 +198,107 @@ export const createMapLibreMap: MapFactory = (
       })
     },
 
-    setBasemap: (basemap: BasemapDefinition) =>
-      whenReady(() => {
-        if (map.getLayer(BASEMAP_LAYER_ID)) map.removeLayer(BASEMAP_LAYER_ID)
-        if (map.getSource(BASEMAP_SOURCE_ID))
-          map.removeSource(BASEMAP_SOURCE_ID)
-        map.addSource(BASEMAP_SOURCE_ID, {
+    setBaseLayer: (baseLayer: BaseLayerDefinition) =>
+      runAfterStyleLoaded(() => {
+        if (map.getLayer(BASE_LAYER_STYLE_LAYER_ID))
+          map.removeLayer(BASE_LAYER_STYLE_LAYER_ID)
+        if (map.getSource(BASE_LAYER_SOURCE_ID))
+          map.removeSource(BASE_LAYER_SOURCE_ID)
+        map.addSource(BASE_LAYER_SOURCE_ID, {
           type: 'raster',
-          tiles: [basemap.tileUrl],
+          tiles: [baseLayer.tileUrl],
           tileSize: 256,
-          maxzoom: basemap.maxZoom,
-          attribution: basemap.attribution,
+          maxzoom: baseLayer.maxZoom,
+          attribution: baseLayer.attribution,
         })
-        // 後から差し替えたベースマップがオーバーレイを覆い隠さないよう、最初のオーバーレイの下に差し込む
+        // 後から差し替えたベースレイヤーがオーバーレイヤーを覆い隠さないよう、最初のオーバーレイヤーの下に差し込む
         map.addLayer(
-          { id: BASEMAP_LAYER_ID, type: 'raster', source: BASEMAP_SOURCE_ID },
-          firstOverlayLayerId(),
+          {
+            id: BASE_LAYER_STYLE_LAYER_ID,
+            type: 'raster',
+            source: BASE_LAYER_SOURCE_ID,
+          },
+          lowestOverlayerStyleLayerId(),
         )
       }),
 
-    addOverlay: (definition, appearance) =>
-      whenReady(() => {
-        if (overlays.has(definition.id)) return
-        map.addSource(overlaySourceId(definition.id), {
+    addOverlayer: (overlayerDefinition, overlayerAppearance) =>
+      runAfterStyleLoaded(() => {
+        if (overlayerDefinitionsById.has(overlayerDefinition.id)) return
+        map.addSource(sourceIdOfOverlayer(overlayerDefinition.id), {
           type: 'geojson',
-          data: definition.dataUrl,
+          data: overlayerDefinition.dataUrl,
         })
-        buildOverlayLayers(definition, appearance).forEach((layer) =>
-          map.addLayer(layer),
+        createStyleLayersForOverlayer(
+          overlayerDefinition,
+          overlayerAppearance,
+        ).forEach((styleLayer) => map.addLayer(styleLayer))
+        overlayerDefinitionsById.set(
+          overlayerDefinition.id,
+          overlayerDefinition,
         )
-        overlays.set(definition.id, definition)
-        overlayOrder = [...overlayOrder, definition.id]
+        overlayerOrder = [...overlayerOrder, overlayerDefinition.id]
       }),
 
-    removeOverlay: (overlayId) =>
-      whenReady(() => {
-        const definition = overlays.get(overlayId)
-        if (!definition) return
-        overlayLayerIds(definition).forEach((layerId) => {
-          if (map.getLayer(layerId)) map.removeLayer(layerId)
-        })
-        map.removeSource(overlaySourceId(overlayId))
-        overlays.delete(overlayId)
-        overlayOrder = overlayOrder.filter((id) => id !== overlayId)
+    removeOverlayer: (overlayerId) =>
+      runAfterStyleLoaded(() => {
+        const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
+        if (!overlayerDefinition) return
+        styleLayerIdsOfOverlayer(overlayerDefinition).forEach(
+          (styleLayerId) => {
+            if (map.getLayer(styleLayerId)) map.removeLayer(styleLayerId)
+          },
+        )
+        map.removeSource(sourceIdOfOverlayer(overlayerId))
+        overlayerDefinitionsById.delete(overlayerId)
+        overlayerOrder = overlayerOrder.filter((id) => id !== overlayerId)
       }),
 
-    updateOverlay: (overlayId, appearance) =>
-      whenReady(() => {
-        const definition = overlays.get(overlayId)
-        if (!definition) return
-        // レイヤーを作り直すと GeoJSON の再取得でちらつくため、変わりうるプロパティだけを書き換える
-        buildOverlayLayers(definition, appearance).forEach((layer) => {
-          if (!('layout' in layer) || !('paint' in layer)) return
+    updateOverlayerAppearance: (overlayerId, overlayerAppearance) =>
+      runAfterStyleLoaded(() => {
+        const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
+        if (!overlayerDefinition) return
+        // スタイルレイヤーを作り直すと GeoJSON の再取得でちらつくため、変わりうるプロパティだけを書き換える
+        createStyleLayersForOverlayer(
+          overlayerDefinition,
+          overlayerAppearance,
+        ).forEach((styleLayer) => {
+          if (!('layout' in styleLayer) || !('paint' in styleLayer)) return
           map.setLayoutProperty(
-            layer.id,
+            styleLayer.id,
             'visibility',
-            appearance.visible ? 'visible' : 'none',
+            overlayerAppearance.visible ? 'visible' : 'none',
           )
-          Object.entries(layer.paint ?? {})
+          Object.entries(styleLayer.paint ?? {})
             .filter(([property]) => property.endsWith('opacity'))
             .forEach(([property, value]) =>
-              map.setPaintProperty(layer.id, property as PaintProperty, value),
+              map.setPaintProperty(
+                styleLayer.id,
+                property as PaintProperty,
+                value,
+              ),
             )
         })
       }),
 
-    setOverlayOrder: (overlayIds) =>
-      whenReady(() => {
+    setOverlayerOrder: (overlayerIds) =>
+      runAfterStyleLoaded(() => {
         // 下から順に最上位へ移動していくと、最終的に指定どおりの順になる
-        overlayIds.forEach((overlayId) => {
-          const definition = overlays.get(overlayId)
-          if (!definition) return
-          overlayLayerIds(definition).forEach((layerId) =>
-            map.moveLayer(layerId),
+        overlayerIds.forEach((overlayerId) => {
+          const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
+          if (!overlayerDefinition) return
+          styleLayerIdsOfOverlayer(overlayerDefinition).forEach(
+            (styleLayerId) => map.moveLayer(styleLayerId),
           )
         })
-        overlayOrder = overlayIds.filter((id) => overlays.has(id))
+        overlayerOrder = overlayerIds.filter((id) =>
+          overlayerDefinitionsById.has(id),
+        )
       }),
 
-    onFeatureClick: (listener) => {
-      const handler = (event: MapMouseEvent) => listener(findFeature(event))
+    subscribeToFeatureClick: (listener) => {
+      const handler = (event: MapMouseEvent) =>
+        listener(findFeatureUnderPointer(event))
       map.on('click', handler)
       return () => map.off('click', handler)
     },

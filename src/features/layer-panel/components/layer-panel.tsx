@@ -1,16 +1,16 @@
-import { useLayerState } from '#/shared/map/layer-state/fetch-layers'
-import { useUpdateLayerState } from '#/shared/map/layer-state/update-layers'
-import { BASEMAPS } from '#/shared/map/catalog/basemaps'
-import { findOverlayDefinition } from '#/shared/map/catalog/overlay-catalog'
+import { useLayersState } from '#/shared/map/layers-state/fetch-layers'
+import { useWriteLayersStateToCache } from '#/shared/map/layers-state/write-layers-state-to-cache'
+import { BASE_LAYERS } from '#/shared/map/catalog/base-layers'
+import { findOverlayerDefinition } from '#/shared/map/catalog/overlayer-catalog'
 import {
-  moveOverlay,
-  selectBasemap,
-  setOverlayOpacity,
-  setOverlayVisible,
-} from '#/shared/map/layer-state/layer-operations'
+  moveOverlayerOneStep,
+  updateBaseLayer,
+  updateOverlayerOpacity,
+  updateOverlayerVisibility,
+} from '#/shared/map/layers-state/update-layers'
 import { useLayerPanelStore } from '../stores/layer-panel-store'
 import type { ReactNode } from 'react'
-import type { LayerState } from '#/shared/map/types'
+import type { Layers } from '#/shared/map/types'
 
 type Props = {
   mapId: string
@@ -19,16 +19,19 @@ type Props = {
 }
 
 export function LayerPanel({ mapId, children }: Props) {
-  const layerState = useLayerState(mapId)
-  const updateLayerState = useUpdateLayerState(mapId)
-  const open = useLayerPanelStore((store) => store.open)
-  const toggle = useLayerPanelStore((store) => store.toggle)
+  const layersState = useLayersState(mapId)
+  const writeLayersStateToCache = useWriteLayersStateToCache(mapId)
+  const isOpen = useLayerPanelStore((store) => store.isOpen)
+  const switchBetweenOpenAndClosed = useLayerPanelStore(
+    (store) => store.switchBetweenOpenAndClosed,
+  )
 
-  const apply = (operation: (current: LayerState) => LayerState) =>
-    updateLayerState(operation(layerState))
+  const writeChangedLayersStateToCache = (
+    updateLayers: (current: Layers) => Layers,
+  ) => writeLayersStateToCache(updateLayers(layersState))
 
   // 保存上は先頭が最下層だが、パネルでは手前に描かれるものを上に見せたいので逆順で表示する
-  const overlaysTopFirst = [...layerState.overlays].reverse()
+  const overlayersTopFirst = [...layersState.overlayers].reverse()
 
   return (
     <section className="w-72 rounded-lg bg-white/95 text-sm text-slate-800 shadow-lg backdrop-blur">
@@ -36,32 +39,34 @@ export function LayerPanel({ mapId, children }: Props) {
         <h2 className="font-semibold">レイヤー</h2>
         <button
           type="button"
-          onClick={toggle}
-          aria-expanded={open}
+          onClick={switchBetweenOpenAndClosed}
+          aria-expanded={isOpen}
           className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
         >
-          {open ? '閉じる' : '開く'}
+          {isOpen ? '閉じる' : '開く'}
         </button>
       </header>
 
-      {open && (
+      {isOpen && (
         <div className="space-y-4 border-t border-slate-200 px-4 py-3">
           <fieldset>
             <legend className="mb-2 text-xs font-semibold text-slate-500">
-              ベースマップ
+              ベースレイヤー
             </legend>
             <div className="space-y-1">
-              {BASEMAPS.map((basemap) => (
-                <label key={basemap.id} className="flex items-center gap-2">
+              {BASE_LAYERS.map((baseLayer) => (
+                <label key={baseLayer.id} className="flex items-center gap-2">
                   <input
                     type="radio"
-                    name="basemap"
-                    checked={layerState.basemapId === basemap.id}
+                    name="baseLayer"
+                    checked={layersState.baseLayerId === baseLayer.id}
                     onChange={() =>
-                      apply((current) => selectBasemap(current, basemap.id))
+                      writeChangedLayersStateToCache((current) =>
+                        updateBaseLayer(current, baseLayer.id),
+                      )
                     }
                   />
-                  {basemap.label}
+                  {baseLayer.label}
                 </label>
               ))}
             </div>
@@ -69,24 +74,26 @@ export function LayerPanel({ mapId, children }: Props) {
 
           <fieldset>
             <legend className="mb-2 text-xs font-semibold text-slate-500">
-              オーバーレイ（上ほど手前）
+              オーバーレイヤー（上ほど手前）
             </legend>
             <ul className="space-y-3">
-              {overlaysTopFirst.map((setting, index) => {
-                const definition = findOverlayDefinition(setting.overlayId)
-                if (!definition) return null
+              {overlayersTopFirst.map((overlayerSetting, positionFromTop) => {
+                const overlayerDefinition = findOverlayerDefinition(
+                  overlayerSetting.overlayerId,
+                )
+                if (!overlayerDefinition) return null
                 return (
-                  <li key={setting.overlayId} className="space-y-1">
+                  <li key={overlayerSetting.overlayerId} className="space-y-1">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id={`overlay-${setting.overlayId}`}
-                        checked={setting.visible}
+                        id={`overlayer-${overlayerSetting.overlayerId}`}
+                        checked={overlayerSetting.visible}
                         onChange={(event) =>
-                          apply((current) =>
-                            setOverlayVisible(
+                          writeChangedLayersStateToCache((current) =>
+                            updateOverlayerVisibility(
                               current,
-                              setting.overlayId,
+                              overlayerSetting.overlayerId,
                               event.target.checked,
                             ),
                           )
@@ -94,21 +101,27 @@ export function LayerPanel({ mapId, children }: Props) {
                       />
                       <span
                         className="inline-block size-3 rounded-sm"
-                        style={{ backgroundColor: definition.color }}
+                        style={{
+                          backgroundColor: overlayerDefinition.color,
+                        }}
                       />
                       <label
-                        htmlFor={`overlay-${setting.overlayId}`}
+                        htmlFor={`overlayer-${overlayerSetting.overlayerId}`}
                         className="flex-1"
                       >
-                        {definition.label}
+                        {overlayerDefinition.label}
                       </label>
                       <button
                         type="button"
-                        aria-label={`${definition.label}を上へ`}
-                        disabled={index === 0}
+                        aria-label={`${overlayerDefinition.label}を上へ`}
+                        disabled={positionFromTop === 0}
                         onClick={() =>
-                          apply((current) =>
-                            moveOverlay(current, setting.overlayId, 'up'),
+                          writeChangedLayersStateToCache((current) =>
+                            moveOverlayerOneStep(
+                              current,
+                              overlayerSetting.overlayerId,
+                              'up',
+                            ),
                           )
                         }
                         className="rounded px-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
@@ -117,11 +130,17 @@ export function LayerPanel({ mapId, children }: Props) {
                       </button>
                       <button
                         type="button"
-                        aria-label={`${definition.label}を下へ`}
-                        disabled={index === overlaysTopFirst.length - 1}
+                        aria-label={`${overlayerDefinition.label}を下へ`}
+                        disabled={
+                          positionFromTop === overlayersTopFirst.length - 1
+                        }
                         onClick={() =>
-                          apply((current) =>
-                            moveOverlay(current, setting.overlayId, 'down'),
+                          writeChangedLayersStateToCache((current) =>
+                            moveOverlayerOneStep(
+                              current,
+                              overlayerSetting.overlayerId,
+                              'down',
+                            ),
                           )
                         }
                         className="rounded px-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
@@ -136,13 +155,13 @@ export function LayerPanel({ mapId, children }: Props) {
                         min={0}
                         max={1}
                         step={0.05}
-                        value={setting.opacity}
-                        disabled={!setting.visible}
+                        value={overlayerSetting.opacity}
+                        disabled={!overlayerSetting.visible}
                         onChange={(event) =>
-                          apply((current) =>
-                            setOverlayOpacity(
+                          writeChangedLayersStateToCache((current) =>
+                            updateOverlayerOpacity(
                               current,
-                              setting.overlayId,
+                              overlayerSetting.overlayerId,
                               Number(event.target.value),
                             ),
                           )
@@ -150,7 +169,7 @@ export function LayerPanel({ mapId, children }: Props) {
                         className="flex-1"
                       />
                       <span className="w-8 text-right tabular-nums">
-                        {Math.round(setting.opacity * 100)}%
+                        {Math.round(overlayerSetting.opacity * 100)}%
                       </span>
                     </label>
                   </li>

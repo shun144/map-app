@@ -1,9 +1,11 @@
-import type { OverlayAppearance } from '#/lib/map/types'
+import type { OverlayerAppearance } from '#/lib/map/types'
 
-export type OverlaySetting = { overlayId: string } & OverlayAppearance
+export type OverlayerSetting = {
+  overlayerId: string
+} & OverlayerAppearance
 
-/** overlays は配列の先頭が最下層 */
-export type LayerState = {
-  basemapId: string
-  overlays: Array<OverlaySetting>
+/** overlayers は配列の先頭が最下層 */
+export type Layers = {
+  baseLayerId: string
+  overlayers: Array<OverlayerSetting>
 }

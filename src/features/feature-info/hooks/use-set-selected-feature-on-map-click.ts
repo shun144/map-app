@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { useMapController } from '#/lib/map/map-provider'
 import { useSelectedFeatureStore } from '../stores/selected-feature-store'
 
-export function useFeatureSelection() {
+export function useSetSelectedFeatureOnMapClick() {
   const mapController = useMapController()
-  const select = useSelectedFeatureStore((store) => store.select)
+  const setSelectedFeature = useSelectedFeatureStore(
+    (store) => store.setSelectedFeature,
+  )
 
   useEffect(() => {
     if (!mapController) return
-    return mapController.onFeatureClick(select)
-  }, [mapController, select])
+    return mapController.subscribeToFeatureClick(setSelectedFeature)
+  }, [mapController, setSelectedFeature])
 }

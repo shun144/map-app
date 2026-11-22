@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DEFAULT_MAP_ID } from '#/config/map'
 import { viewportQueryOptions } from '#/shared/map/storage/fetch-viewport'
-import { layersQueryOptions } from '#/shared/map/layer-state/fetch-layers'
+import { layersQueryOptions } from '#/shared/map/layers-state/fetch-layers'
 import { MapPage } from '../pages/map-page'
 
 export const Route = createFileRoute('/')({
@@ -9,10 +9,10 @@ export const Route = createFileRoute('/')({
   loader: ({ context: { queryClient, repositories } }) =>
     Promise.all([
       queryClient.ensureQueryData(
-        viewportQueryOptions(repositories.mapState, DEFAULT_MAP_ID),
+        viewportQueryOptions(repositories.mapSnapshot, DEFAULT_MAP_ID),
       ),
       queryClient.ensureQueryData(
-        layersQueryOptions(repositories.mapState, DEFAULT_MAP_ID),
+        layersQueryOptions(repositories.mapSnapshot, DEFAULT_MAP_ID),
       ),
     ]),
   pendingComponent: () => (

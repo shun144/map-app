@@ -37,16 +37,15 @@
 mutationFn: async () => {
   if (!mapController) throw new Error('地図がない')
   const viewport = mapController.getViewport()
-  await repository.save(mapId, { viewport, layerState })
+  await repository.save(mapId, { viewport, layers: layersState })
 }
 
 // OK: 保存するフックは、渡された値を保存するだけ
-mutationFn: (savedMapState: SavedMapState) =>
-  repository.save(mapId, savedMapState)
+mutationFn: (mapSnapshot: MapSnapshot) => repository.save(mapId, mapSnapshot)
 ```
 
 - 必要な値は引数で受け取る。フックの中で取りに行かない
-- 前提が満たされないときの扱いは、利用者に見える場所（UI）で決める。例: 地図ができるまで保存ボタンを押せなくする（`src/features/map-viewer/components/save-map-state-button.tsx`）
+- 前提が満たされないときの扱いは、利用者に見える場所（UI）で決める。例: 地図ができるまで保存ボタンを押せなくする（`src/features/map-viewer/components/save-map-snapshot-button.tsx`）
 
 ## 命名
 
@@ -54,13 +53,74 @@ mutationFn: (savedMapState: SavedMapState) =>
 
 `state`・`data`・`value`・`controller`・`next`・`s` のような、何を指すか読み手が推測しないといけない名前は使わない。
 
-| NG           | OK                      |
-| ------------ | ----------------------- |
-| `state`      | `layerState`            |
-| `controller` | `mapController`         |
-| `diff`       | `layerStateDiff`        |
-| `applied`    | `lastAppliedLayerState` |
-| `(s) => ...` | `(current) => ...`      |
+| NG           | OK                    |
+| ------------ | --------------------- |
+| `state`      | `layersState`         |
+| `controller` | `mapController`       |
+| `setting`    | `overlayerSetting`    |
+| `definition` | `overlayerDefinition` |
+| `diff`       | `layersChanges`       |
+| `applied`    | `lastDrawnLayers`     |
+| `(s) => ...` | `(current) => ...`    |
+
+### 名前は長くてもよいので、役割と処理内容が分かるものにする
+
+名前の短さより、名前だけを読んで「何をするか」「何を表すか」が分かることを優先する。本体を読まないと処理内容が分からない名前は付けない。曖昧な名前は読み手の誤解を生み、誤解した前提で設計の議論が進んでしまうため。
+
+- 関数名は「動詞＋対象」で書き、動詞は実際に起きることを具体的に表すものを選ぶ。どこに書くか・何を作るかまで名前に入れてよい
+- 確認の目安：名前だけを見て、引数と戻り値と副作用（キャッシュ・地図・保存先のどれが変わるか）を言い当てられるか。言い当てられないなら名前を変える
+
+次の動詞は、何が起きるかを特定できないので使わない。
+
+| 使わない動詞              | 理由                                             | このプロジェクトでの言い換え                              |
+| ------------------------- | ------------------------------------------------ | --------------------------------------------------------- |
+| `select`                  | 利用者の行為なのか、値の読み出しなのか分からない | `updateBaseLayer`、`setSelectedFeature`                   |
+| `apply`                   | 何に何を当てはめるのか分からない                 | `writeChangedLayersStateToCache`                          |
+| `update`（対象なし）      | 何を書き換えるのか分からない                     | `updateOverlayerAppearance`、`writeLayersStateToCache`    |
+| `sync`                    | どちらからどちらへ、何をするのか分からない       | `useDrawLayersStateOnMap`                                 |
+| `reconcile`・`diff`       | 結果として何を返すのか分からない                 | `createLayersMatchingCatalog`、`findChangesBetweenLayers` |
+| `toggle`（対象なし）      | 何を切り替えるのか分からない                     | `switchBetweenOpenAndClosed`                              |
+| `handle`・`process`・`do` | 何をするのかを何も表していない                   | 実際の処理を表す動詞にする                                |
+
+書き込み先ごとに動詞をそろえる。非破壊的更新とは、元のオブジェクトを書き換えず、更新した結果を新しいオブジェクトとして返すこと。`copy`（複製が目的に読める）や `create`（無から作るように読める）は使わない。名前だけでは非破壊的更新だと分からないので、そのことはファイル冒頭のコメントに書く。
+
+| 処理                                         | 名前の形                                                     | 例                                                     |
+| -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| 新しいオブジェクトとして非破壊的更新をする   | `update〜`（元の値を引数で受け取り、新しい値を戻り値で返す） | `updateOverlayerOpacity(layers, overlayerId, opacity)` |
+| TanStack Query のキャッシュを書き換える      | `write〜ToCache`                                             | `writeLayersStateToCache`                              |
+| 地図に描く・地図を動かす                     | `draw〜OnMap`・`moveMapTo〜`                                 | `useDrawLayersStateOnMap`、`useMoveMapToViewport`      |
+| 保存先に保存する                             | `save〜`                                                     | `saveCurrentMapSnapshot`                               |
+| 実在するもの（地図・ストア）の値を書き換える | `set〜`・`add〜`・`remove〜`                                 | `mapController.setBaseLayer`、`setSelectedFeature`     |
+
+### 複数のものをまとめた値は、名前でも複数だと分かるようにする
+
+修飾する語を単数形にする英語の慣習（`layer state`、`user list`）より、読み手が誤読しないことを優先する。単数形の修飾語だと「1つ分の状態」と読めてしまい、1つ分を表す別の型（例: `OverlayerSetting`）と取り違えやすい。
+
+| NG           | OK            | 中身                                                   |
+| ------------ | ------------- | ------------------------------------------------------ |
+| `Layer`      | `Layers`      | ベースレイヤーの選択と、全オーバーレイヤーの設定（型） |
+| `layerState` | `layersState` | キャッシュにある、そのレイヤー構成（状態の変数）       |
+
+- 1つ分を表すものは単数形のままにする（例: `OverlayerSetting`、`overlayerSetting`）
+- 保存データのプロパティ名も同じ規則に従う。保存データのプロパティ名を変えるときは、保存先の版番号を上げる（ADR 0004）
+
+### `State` は、Zustand か TanStack Query が管理する状態の変数名にだけ使う
+
+`State` という語は「アプリが管理していて、時間とともに変わる値」を指す。ただの型・interface・関数の引数・保存データに使うと、それが管理された状態なのか、ただの値なのか区別がつかなくなる。
+
+| 使ってよい                                                                   | 例                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Zustand のストアや TanStack Query のキャッシュから取り出した値を入れる変数   | `const layersState = useLayersState(mapId)`                            |
+| その状態を読み書きするフック・関数（名前が指しているのが状態そのもののとき） | `useLayersState`、`writeLayersStateToCache`、`useDrawLayersStateOnMap` |
+
+| 使わない                   | NG                                    | OK                                     |
+| -------------------------- | ------------------------------------- | -------------------------------------- |
+| 型・interface              | `LayersState`                         | `Layers`                               |
+| 保存データの型・リポジトリ | `SavedMapState`、`MapStateRepository` | `MapSnapshot`、`MapSnapshotRepository` |
+| 純粋関数の引数・戻り値     | `(layersState: LayersState)`          | `(layers: Layers)`                     |
+| 保存データのプロパティ     | `{ viewport, layersState }`           | `{ viewport, layers }`                 |
+
+- 状態の変数を、状態ではない場所（保存データ・純粋関数の引数）へ渡すときは、受け取る側の名前で渡す（例: `{ layers: layersState }`）
 
 ### 名前を付け替えない
 
@@ -114,6 +174,7 @@ const value = { mapController, setMapController }
 
 ## テスト
 
-- 地図を使うフック・コンポーネントは、本物の地図ではなく `FakeMapController`（`src/lib/map/testing/fake-map-controller.tsx`）で検証する
+現在はテストコードを置いていない（2026-11-22 時点）。設計と命名を変えるたびにテストを書き直すコストを避けるため。修正のたびにテストを書き足したり書き直したりしない。テストを再開するときは次に従う。
+
 - Testing Library で描画するテストには `afterEach(cleanup)` を書く。Vitest のグローバル関数を有効にしていないため、自動の後片付けが働かない
 - TanStack Query のキャッシュ変更の通知は `setTimeout(0)` で遅れて届く。キャッシュを変えた直後の再描画を確かめるときは `waitFor` で待つ

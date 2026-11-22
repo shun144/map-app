@@ -26,8 +26,6 @@ export function MapCanvas({ initialViewport, className }: Props) {
     }
   }, [createMap, setMapController])
 
-  // div を2重にするのは、地図ライブラリが付ける @layer 外の CSS（.maplibregl-map の position: relative）が
-  // Tailwind のレイアウト用クラスに常に勝ち、同じ要素だと高さ 0 に潰れるため
   return (
     <div className={className}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />

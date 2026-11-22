@@ -1,27 +1,28 @@
 import { createContext, useContext } from 'react'
 import type { ReactNode } from 'react'
-import type { MapStateRepository } from './map-state-repository'
+import type { MapSnapshotRepository } from './map-snapshot-repository'
 
-const MapStateRepositoryContext = createContext<MapStateRepository | null>(null)
+const MapSnapshotRepositoryContext =
+  createContext<MapSnapshotRepository | null>(null)
 
-export function MapStateRepositoryProvider({
+export function MapSnapshotRepositoryProvider({
   repository,
   children,
 }: {
-  repository: MapStateRepository
+  repository: MapSnapshotRepository
   children: ReactNode
 }) {
   return (
-    <MapStateRepositoryContext value={repository}>
+    <MapSnapshotRepositoryContext value={repository}>
       {children}
-    </MapStateRepositoryContext>
+    </MapSnapshotRepositoryContext>
   )
 }
 
-export function useMapStateRepository(): MapStateRepository {
-  const repository = useContext(MapStateRepositoryContext)
+export function useMapSnapshotRepository(): MapSnapshotRepository {
+  const repository = useContext(MapSnapshotRepositoryContext)
   if (!repository) {
-    throw new Error('MapStateRepositoryProvider の外で使われています')
+    throw new Error('MapSnapshotRepositoryProvider の外で使われています')
   }
   return repository
 }

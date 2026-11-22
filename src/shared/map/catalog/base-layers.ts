@@ -1,9 +1,9 @@
-import type { BasemapDefinition } from '#/lib/map/types'
+import type { BaseLayerDefinition } from '#/lib/map/types'
 
 const GSI_ATTRIBUTION =
   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
 
-export const BASEMAPS: ReadonlyArray<BasemapDefinition> = [
+export const BASE_LAYERS: ReadonlyArray<BaseLayerDefinition> = [
   {
     id: 'gsi-pale',
     label: '地理院 淡色地図',
@@ -36,11 +36,11 @@ export const BASEMAPS: ReadonlyArray<BasemapDefinition> = [
   },
 ]
 
-export const DEFAULT_BASEMAP_ID = 'gsi-pale'
+export const DEFAULT_BASE_LAYER_ID = 'gsi-pale'
 
-export function findBasemap(basemapId: string): BasemapDefinition {
+export function findBaseLayer(baseLayerId: string): BaseLayerDefinition {
   return (
-    BASEMAPS.find((basemap) => basemap.id === basemapId) ??
-    BASEMAPS.find((basemap) => basemap.id === DEFAULT_BASEMAP_ID)!
+    BASE_LAYERS.find((baseLayer) => baseLayer.id === baseLayerId) ??
+    BASE_LAYERS.find((baseLayer) => baseLayer.id === DEFAULT_BASE_LAYER_ID)!
   )
 }
