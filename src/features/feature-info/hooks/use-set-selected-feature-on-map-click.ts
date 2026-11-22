@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useMapController } from '#/lib/map/map-provider'
+import { ESTATE_OVERLAYER_ID } from '#/shared/map/catalog/overlayer-catalog'
 import { useSelectedFeatureStore } from '../stores/selected-feature-store'
 
 export function useSetSelectedFeatureOnMapClick() {
@@ -10,6 +11,10 @@ export function useSetSelectedFeatureOnMapClick() {
 
   useEffect(() => {
     if (!mapController) return
-    return mapController.subscribeToFeatureClick(setSelectedFeature)
+    return mapController.subscribeToFeatureClick((feature) => {
+      // 物件ポイントをクリックしたときは、属性を表示せず物件詳細画面を開くので（GLOSSARY「地物」）、選択中の地物を変えない
+      if (feature?.overlayerId === ESTATE_OVERLAYER_ID) return
+      setSelectedFeature(feature)
+    })
   }, [mapController, setSelectedFeature])
 }

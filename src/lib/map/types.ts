@@ -24,10 +24,22 @@ export type GeometryKind = 'point' | 'line' | 'polygon'
 export type OverlayerDefinition = {
   id: string
   label: string
-  /** GeoJSON の取得先 URL */
-  dataUrl: string
+  /** GeoJSON の取得先 URL。null のときは、描く点を MapController.setOverlayerPoints で渡す */
+  dataUrl: string | null
   geometryKind: GeometryKind
   color: string
+}
+
+/** dataUrl が null のオーバーレイヤーに描く点。properties はクリックしたときに MapFeature.properties で返る */
+export type MapPoint = {
+  lngLat: LngLat
+  properties: Record<string, unknown>
+}
+
+export type MapRightClick = {
+  lngLat: LngLat
+  /** 地図の左上を原点とした、右クリックした位置のピクセル座標 */
+  pointInMap: { x: number; y: number }
 }
 
 export type OverlayerAppearance = {

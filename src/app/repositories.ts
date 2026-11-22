@@ -1,10 +1,14 @@
 import { openAppDatabase } from '#/shared/map/storage/indexeddb/database'
 import { createIndexedDbMapSnapshotRepository } from '#/shared/map/storage/indexeddb/indexeddb-map-snapshot-repository'
+import { createIndexedDbEstateRepository } from '#/shared/map/storage/indexeddb/indexeddb-estate-repository'
 import { createMemoryMapSnapshotRepository } from '#/shared/map/storage/memory-map-snapshot-repository'
+import { createMemoryEstateRepository } from '#/shared/map/storage/memory-estate-repository'
 import type { MapSnapshotRepository } from '#/shared/map/storage/map-snapshot-repository'
+import type { EstateRepository } from '#/shared/map/storage/estate-repository'
 
 export type Repositories = {
   mapSnapshot: MapSnapshotRepository
+  estate: EstateRepository
 }
 
 /**
@@ -14,10 +18,16 @@ export type Repositories = {
 export async function createRepositories(): Promise<Repositories> {
   try {
     const db = await openAppDatabase()
-    return { mapSnapshot: createIndexedDbMapSnapshotRepository(db) }
+    return {
+      mapSnapshot: createIndexedDbMapSnapshotRepository(db),
+      estate: createIndexedDbEstateRepository(db),
+    }
   } catch (error) {
     // 保存先が使えなくても地図は使えるべきなので、保存を諦めてメモリで動かす（リロードで消える）
     console.warn('保存先を開けないため、メモリに保存します', error)
-    return { mapSnapshot: createMemoryMapSnapshotRepository() }
+    return {
+      mapSnapshot: createMemoryMapSnapshotRepository(),
+      estate: createMemoryEstateRepository(),
+    }
   }
 }

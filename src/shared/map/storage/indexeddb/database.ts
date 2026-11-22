@@ -7,10 +7,12 @@ import type { DBSchema, IDBPDatabase } from 'idb'
  */
 
 const DB_NAME = 'map-project'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 export interface AppDBSchema extends DBSchema {
   mapSnapshots: { key: string; value: unknown }
+  /** キーは物件の ID */
+  estates: { key: string; value: unknown }
 }
 
 export type AppDatabase = IDBPDatabase<AppDBSchema>
@@ -32,6 +34,10 @@ export function openAppDatabase(): Promise<AppDatabase> {
       }
       if (!db.objectStoreNames.contains('mapSnapshots')) {
         db.createObjectStore('mapSnapshots')
+      }
+      // 版 4 で物件のストアを足した。版 3 までの地図スナップショットはそのまま残す
+      if (!db.objectStoreNames.contains('estates')) {
+        db.createObjectStore('estates')
       }
     },
   })

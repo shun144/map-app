@@ -1,6 +1,8 @@
 import type {
   BaseLayerDefinition,
   MapFeature,
+  MapPoint,
+  MapRightClick,
   OverlayerAppearance,
   OverlayerDefinition,
   Viewport,
@@ -30,11 +32,25 @@ export interface MapController {
   ) => void
   /** 重なり順を指定する。配列の先頭が最下層 */
   setOverlayerOrder: (overlayerIds: ReadonlyArray<string>) => void
+  /**
+   * dataUrl が null のオーバーレイヤーに描く点を、渡した点で置き換える。
+   * 点のデータと表示設定は別々のタイミングで届くので、addOverlayer より前に呼んでもよい
+   */
+  setOverlayerPoints: (
+    overlayerId: string,
+    points: ReadonlyArray<MapPoint>,
+  ) => void
 
   /** 地物のクリック。何もない場所をクリックしたときは null */
   subscribeToFeatureClick: (
     listener: (feature: MapFeature | null) => void,
   ) => Unsubscribe
+  /** 地図の右クリック。ブラウザの右クリックメニューは出さない */
+  subscribeToRightClick: (
+    listener: (rightClick: MapRightClick) => void,
+  ) => Unsubscribe
+  /** ドラッグ・ズーム・easeTo などで地図が動き始めたとき */
+  subscribeToMoveStart: (listener: () => void) => Unsubscribe
 
   destroy: () => void
 }

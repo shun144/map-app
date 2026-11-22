@@ -6,11 +6,12 @@ import {
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { AddLayerObject, MapMouseEvent } from 'maplibre-gl'
+import type { AddLayerObject, GeoJSONSource, MapMouseEvent } from 'maplibre-gl'
 import type { MapFactory, MapController } from '../map-controller'
 import type {
   BaseLayerDefinition,
   MapFeature,
+  MapPoint,
   OverlayerAppearance,
   OverlayerDefinition,
   Viewport,
@@ -26,6 +27,21 @@ import type {
 setWorkerUrl(maplibreWorkerUrl)
 
 type PaintProperty = Parameters<MapLibreMap['setPaintProperty']>[1]
+type GeoJsonData = Parameters<GeoJSONSource['setData']>[0]
+
+function convertPointsToGeoJson(points: ReadonlyArray<MapPoint>): GeoJsonData {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [point.lngLat.lng, point.lngLat.lat],
+      },
+      properties: point.properties,
+    })),
+  }
+}
 
 const BASE_LAYER_SOURCE_ID = 'baseLayer'
 const BASE_LAYER_STYLE_LAYER_ID = 'baseLayer'
@@ -143,6 +159,8 @@ export const createMapLibreMap: MapFactory = (
   /** MapLibre のスタイルレイヤーからは定義（ラベルなど）を逆引きできないので、自前で持つ。順序は下→上 */
   const overlayerDefinitionsById = new Map<string, OverlayerDefinition>()
   let overlayerOrder: Array<string> = []
+  /** addOverlayer より先に setOverlayerPoints が呼ばれても点を失わないよう、渡された点を覚えておく */
+  const pointsByOverlayerId = new Map<string, ReadonlyArray<MapPoint>>()
 
   const lowestOverlayerStyleLayerId = (): string | undefined => {
     const lowestOverlayerId = overlayerOrder.at(0)
@@ -227,7 +245,11 @@ export const createMapLibreMap: MapFactory = (
         if (overlayerDefinitionsById.has(overlayerDefinition.id)) return
         map.addSource(sourceIdOfOverlayer(overlayerDefinition.id), {
           type: 'geojson',
-          data: overlayerDefinition.dataUrl,
+          data:
+            overlayerDefinition.dataUrl ??
+            convertPointsToGeoJson(
+              pointsByOverlayerId.get(overlayerDefinition.id) ?? [],
+            ),
         })
         createStyleLayersForOverlayer(
           overlayerDefinition,
@@ -296,11 +318,38 @@ export const createMapLibreMap: MapFactory = (
         )
       }),
 
+    setOverlayerPoints: (overlayerId, points) => {
+      pointsByOverlayerId.set(overlayerId, points)
+      runAfterStyleLoaded(() => {
+        // ソースがまだないときは、addOverlayer が pointsByOverlayerId から点を読んで作る
+        map
+          .getSource<GeoJSONSource>(sourceIdOfOverlayer(overlayerId))
+          ?.setData(convertPointsToGeoJson(points))
+      })
+    },
+
     subscribeToFeatureClick: (listener) => {
       const handler = (event: MapMouseEvent) =>
         listener(findFeatureUnderPointer(event))
       map.on('click', handler)
       return () => map.off('click', handler)
+    },
+
+    subscribeToRightClick: (listener) => {
+      const handler = (event: MapMouseEvent) => {
+        event.originalEvent.preventDefault()
+        listener({
+          lngLat: { lng: event.lngLat.lng, lat: event.lngLat.lat },
+          pointInMap: { x: event.point.x, y: event.point.y },
+        })
+      }
+      map.on('contextmenu', handler)
+      return () => map.off('contextmenu', handler)
+    },
+
+    subscribeToMoveStart: (listener) => {
+      map.on('movestart', listener)
+      return () => map.off('movestart', listener)
     },
 
     destroy: () => map.remove(),

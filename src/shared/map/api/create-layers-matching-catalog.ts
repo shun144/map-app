@@ -1,20 +1,24 @@
-import type { BaseLayerDefinition, OverlayerDefinition } from '#/lib/map/types'
+import type { BaseLayerDefinition } from '#/lib/map/types'
+import type { OverlayerCatalogEntry } from '../catalog/overlayer-catalog'
 import type { Layers, OverlayerSetting } from '../types'
 
 export const DEFAULT_OVERLAYER_OPACITY = 1
 
 /**
- * アプリの更新でカタログやベースレイヤーが変わっても、古い保存データで起動が壊れないように合わせ込む。
- * 新しく増えたオーバーレイヤーを非表示で足すのは、利用者が選んでいない層を勝手に表示しないため。
+ * 保存データのレイヤー構成から、カタログにないオーバーレイヤーを取り除き、カタログに新しく増えたオーバーレイヤーを足す。
+ * ベースレイヤーが一覧にないときは既定のベースレイヤーにする。
+ * アプリの更新でカタログやベースレイヤーが変わっても、古い保存データで起動が壊れないようにするため。
+ * 新しく増えたオーバーレイヤーは、カタログの visibleWhenAdded が true のものを除いて非表示で足す。
+ * 非表示にするのは、利用者が選んでいない層を勝手に表示しないため。
  */
 export function createLayersMatchingCatalog(
   storedLayers: Layers | null,
-  overlayerCatalog: ReadonlyArray<OverlayerDefinition>,
+  overlayerCatalog: ReadonlyArray<OverlayerCatalogEntry>,
   baseLayers: ReadonlyArray<BaseLayerDefinition>,
   defaultBaseLayerId: string,
 ): Layers {
   const overlayerIdsInCatalog = new Set(
-    overlayerCatalog.map((overlayerDefinition) => overlayerDefinition.id),
+    overlayerCatalog.map((overlayerCatalogEntry) => overlayerCatalogEntry.id),
   )
 
   const keptOverlayerSettings = (storedLayers?.overlayers ?? []).filter(
@@ -28,11 +32,12 @@ export function createLayersMatchingCatalog(
   )
   const addedOverlayerSettings: Array<OverlayerSetting> = overlayerCatalog
     .filter(
-      (overlayerDefinition) => !keptOverlayerIds.has(overlayerDefinition.id),
+      (overlayerCatalogEntry) =>
+        !keptOverlayerIds.has(overlayerCatalogEntry.id),
     )
-    .map((overlayerDefinition) => ({
-      overlayerId: overlayerDefinition.id,
-      visible: false,
+    .map((overlayerCatalogEntry) => ({
+      overlayerId: overlayerCatalogEntry.id,
+      visible: overlayerCatalogEntry.visibleWhenAdded,
       opacity: DEFAULT_OVERLAYER_OPACITY,
     }))
 
