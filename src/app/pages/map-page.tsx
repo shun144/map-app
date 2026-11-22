@@ -1,21 +1,15 @@
 import { MapCanvas } from '#/lib/map/map-canvas'
 import { DEFAULT_MAP_ID } from '#/config/map'
-import { useSavedViewport } from '#/features/viewport/api/get-viewport'
-import { useViewportSync } from '#/features/viewport/hooks/use-viewport-sync'
-import { ResetViewportButton } from '#/features/viewport/components/reset-viewport-button'
-import { useLayerSync } from '#/features/layers/hooks/use-layer-sync'
-import { LayerPanel } from '#/features/layers/components/layer-panel'
-import { useFeatureSelection } from '#/features/feature-info/hooks/use-feature-selection'
-import { FeatureInfoPanel } from '#/features/feature-info/components/feature-info-panel'
+import { useSavedViewport } from '#/features/map-viewer/api/get-viewport'
+import { ResetViewportButton } from '#/features/map-viewer/components/reset-viewport-button'
+import { useLayerSync } from '#/features/map-viewer/hooks/use-layer-sync'
+import { LayerPanel } from '#/features/map-viewer/components/layer-panel'
+import { useFeatureSelection } from '#/features/map-viewer/hooks/use-feature-selection'
+import { FeatureInfoPanel } from '#/features/map-viewer/components/feature-info-panel'
 
-/*
- * feature 同士は import できない（依存ルール）ので、複数の feature をつなぐのはこの画面の役目。
- * useSavedViewport はルートの loader が読み込み済みである前提で呼んでいる。
- */
 export function MapPage() {
   const savedViewport = useSavedViewport(DEFAULT_MAP_ID)
 
-  useViewportSync(DEFAULT_MAP_ID)
   useLayerSync(DEFAULT_MAP_ID)
   useFeatureSelection()
 
@@ -29,7 +23,7 @@ export function MapPage() {
         <FeatureInfoPanel />
       </div>
       <div className="absolute right-14 bottom-8">
-        <ResetViewportButton mapId={DEFAULT_MAP_ID} />
+        <ResetViewportButton />
       </div>
     </main>
   )

@@ -26,7 +26,6 @@ function useMapContext() {
   return context
 }
 
-/** MapCanvas のマウント前は地図が存在しないため null になりうる */
 export function useMapController(): MapController | null {
   return useMapContext().mapController
 }

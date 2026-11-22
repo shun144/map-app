@@ -185,12 +185,6 @@ export const createMapLibreMap: MapFactory = (
       })
     },
 
-    onViewportChange: (listener) => {
-      const handler = () => listener(readViewport())
-      map.on('moveend', handler)
-      return () => map.off('moveend', handler)
-    },
-
     setBasemap: (basemap: BasemapDefinition) =>
       whenReady(() => {
         if (map.getLayer(BASEMAP_LAYER_ID)) map.removeLayer(BASEMAP_LAYER_ID)

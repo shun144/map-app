@@ -7,8 +7,8 @@ import {
   createFakeMapController,
 } from '#/lib/map/testing/fake-map-controller'
 import { layersQueryKey } from '../api/get-layers'
-import { createMemoryLayerRepository } from '../api/memory-layer-repository'
-import { LayerRepositoryProvider } from '../api/repository-context'
+import { createMemoryMapStateRepository } from '../api/memory-map-state-repository'
+import { MapStateRepositoryProvider } from '../api/repository-context'
 import { useLayerSync } from './use-layer-sync'
 import type { ReactNode } from 'react'
 import type { MapController } from '#/lib/map/map-controller'
@@ -34,11 +34,11 @@ function setup() {
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <LayerRepositoryProvider repository={createMemoryLayerRepository()}>
+      <MapStateRepositoryProvider repository={createMemoryMapStateRepository()}>
         <FakeMapProvider mapController={currentMapController}>
           {children}
         </FakeMapProvider>
-      </LayerRepositoryProvider>
+      </MapStateRepositoryProvider>
     </QueryClientProvider>
   )
   const hook = renderHook(() => useLayerSync('default'), { wrapper })

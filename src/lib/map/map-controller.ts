@@ -15,10 +15,7 @@ export type Unsubscribe = () => void
 export interface MapController {
   /** 操作中を含む現在のビューポート */
   getViewport: () => Viewport
-  /** 明示的な移動操作。moveend も発火する */
   setViewport: (viewport: Viewport) => void
-  /** 移動の終了（moveend）ごとに通知する。操作中の毎フレームには通知しない */
-  onViewportChange: (listener: (viewport: Viewport) => void) => Unsubscribe
 
   setBasemap: (basemap: BasemapDefinition) => void
 

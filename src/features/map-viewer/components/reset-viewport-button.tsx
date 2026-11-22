@@ -1,8 +1,8 @@
 import { DEFAULT_VIEWPORT } from '../config/default-viewport'
 import { useMoveToViewport } from '../hooks/use-move-to-viewport'
 
-export function ResetViewportButton({ mapId }: { mapId: string }) {
-  const moveTo = useMoveToViewport(mapId)
+export function ResetViewportButton() {
+  const moveTo = useMoveToViewport()
   return (
     <button
       type="button"

@@ -19,7 +19,8 @@ export type FakeMapController = MapController & {
   basemap: BasemapDefinition | null
   overlays: Map<string, OverlayAppearance>
   overlayOrder: Array<string>
-  emitViewportChange: (viewport: Viewport) => void
+  /** 利用者のドラッグやズームは setViewport を通らないため、別の入口で再現する */
+  simulateUserMove: (viewport: Viewport) => void
   emitFeatureClick: (feature: MapFeature | null) => void
 }
 
@@ -27,7 +28,6 @@ export function createFakeMapController(
   initialViewport: Viewport,
 ): FakeMapController {
   let viewport = initialViewport
-  const viewportListeners = new Set<(viewport: Viewport) => void>()
   const clickListeners = new Set<(feature: MapFeature | null) => void>()
 
   const fake: FakeMapController = {
@@ -39,11 +39,7 @@ export function createFakeMapController(
     getViewport: () => viewport,
     setViewport: (next) => {
       record('setViewport', next)
-      fake.emitViewportChange(next)
-    },
-    onViewportChange: (listener) => {
-      viewportListeners.add(listener)
-      return () => viewportListeners.delete(listener)
+      viewport = next
     },
     setBasemap: (basemap) => {
       record('setBasemap', basemap.id)
@@ -73,9 +69,8 @@ export function createFakeMapController(
     },
     destroy: () => record('destroy'),
 
-    emitViewportChange: (next) => {
+    simulateUserMove: (next) => {
       viewport = next
-      viewportListeners.forEach((listener) => listener(next))
     },
     emitFeatureClick: (feature) =>
       clickListeners.forEach((listener) => listener(feature)),

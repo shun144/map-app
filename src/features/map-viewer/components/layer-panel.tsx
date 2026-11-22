@@ -1,5 +1,5 @@
 import { useLayerState } from '../api/get-layers'
-import { useUpdateLayers } from '../api/update-layers'
+import { useUpdateLayerState } from '../api/update-layers'
 import { BASEMAPS } from '../config/basemaps'
 import { findOverlayDefinition } from '../config/overlay-catalog'
 import {
@@ -9,19 +9,20 @@ import {
   setOverlayVisible,
 } from '../logic/layer-operations'
 import { useLayerPanelStore } from '../stores/layer-panel-store'
+import { SaveMapStateButton } from './save-map-state-button'
 import type { LayerState } from '../types'
 
 export function LayerPanel({ mapId }: { mapId: string }) {
-  const state = useLayerState(mapId)
-  const { mutate } = useUpdateLayers(mapId)
+  const layerState = useLayerState(mapId)
+  const updateLayerState = useUpdateLayerState(mapId)
   const open = useLayerPanelStore((store) => store.open)
   const toggle = useLayerPanelStore((store) => store.toggle)
 
   const apply = (operation: (current: LayerState) => LayerState) =>
-    mutate(operation(state))
+    updateLayerState(operation(layerState))
 
   // 保存上は先頭が最下層だが、パネルでは手前に描かれるものを上に見せたいので逆順で表示する
-  const overlaysTopFirst = [...state.overlays].reverse()
+  const overlaysTopFirst = [...layerState.overlays].reverse()
 
   return (
     <section className="w-72 rounded-lg bg-white/95 text-sm text-slate-800 shadow-lg backdrop-blur">
@@ -49,8 +50,10 @@ export function LayerPanel({ mapId }: { mapId: string }) {
                   <input
                     type="radio"
                     name="basemap"
-                    checked={state.basemapId === basemap.id}
-                    onChange={() => apply((s) => selectBasemap(s, basemap.id))}
+                    checked={layerState.basemapId === basemap.id}
+                    onChange={() =>
+                      apply((current) => selectBasemap(current, basemap.id))
+                    }
                   />
                   {basemap.label}
                 </label>
@@ -74,9 +77,9 @@ export function LayerPanel({ mapId }: { mapId: string }) {
                         id={`overlay-${setting.overlayId}`}
                         checked={setting.visible}
                         onChange={(event) =>
-                          apply((s) =>
+                          apply((current) =>
                             setOverlayVisible(
-                              s,
+                              current,
                               setting.overlayId,
                               event.target.checked,
                             ),
@@ -98,7 +101,9 @@ export function LayerPanel({ mapId }: { mapId: string }) {
                         aria-label={`${definition.label}を上へ`}
                         disabled={index === 0}
                         onClick={() =>
-                          apply((s) => moveOverlay(s, setting.overlayId, 'up'))
+                          apply((current) =>
+                            moveOverlay(current, setting.overlayId, 'up'),
+                          )
                         }
                         className="rounded px-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
                       >
@@ -109,8 +114,8 @@ export function LayerPanel({ mapId }: { mapId: string }) {
                         aria-label={`${definition.label}を下へ`}
                         disabled={index === overlaysTopFirst.length - 1}
                         onClick={() =>
-                          apply((s) =>
-                            moveOverlay(s, setting.overlayId, 'down'),
+                          apply((current) =>
+                            moveOverlay(current, setting.overlayId, 'down'),
                           )
                         }
                         className="rounded px-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
@@ -128,9 +133,9 @@ export function LayerPanel({ mapId }: { mapId: string }) {
                         value={setting.opacity}
                         disabled={!setting.visible}
                         onChange={(event) =>
-                          apply((s) =>
+                          apply((current) =>
                             setOverlayOpacity(
-                              s,
+                              current,
                               setting.overlayId,
                               Number(event.target.value),
                             ),
@@ -147,6 +152,8 @@ export function LayerPanel({ mapId }: { mapId: string }) {
               })}
             </ul>
           </fieldset>
+
+          <SaveMapStateButton mapId={mapId} />
         </div>
       )}
     </section>
