@@ -30,13 +30,12 @@ const extractOverlayerAppearance = ({
   opacity,
 })
 
-/** fromLayers が null のときは地図が空とみなし、すべてを追加として返す */
 export function findChangesBetweenLayers(
-  fromLayers: Layers | null,
+  fromLayers: Layers,
   toLayers: Layers,
 ): LayersChanges {
   const fromOverlayerSettingsById = new Map(
-    (fromLayers?.overlayers ?? []).map((overlayerSetting) => [
+    fromLayers.overlayers.map((overlayerSetting) => [
       overlayerSetting.overlayerId,
       overlayerSetting,
     ]),
@@ -46,10 +45,12 @@ export function findChangesBetweenLayers(
   )
 
   const overlayerChanges: Array<OverlayerChange> = []
-  for (const [overlayerId] of fromOverlayerSettingsById) {
-    if (!toOverlayerIds.has(overlayerId))
-      overlayerChanges.push({ type: 'remove', overlayerId })
+
+  for (const overlayerId of fromOverlayerSettingsById.keys()) {
+    if (toOverlayerIds.has(overlayerId)) continue
+    overlayerChanges.push({ type: 'remove', overlayerId })
   }
+
   for (const overlayerSetting of toLayers.overlayers) {
     const fromOverlayerSetting = fromOverlayerSettingsById.get(
       overlayerSetting.overlayerId,
@@ -60,19 +61,22 @@ export function findChangesBetweenLayers(
         overlayerId: overlayerSetting.overlayerId,
         overlayerAppearance: extractOverlayerAppearance(overlayerSetting),
       })
-    } else if (
+      continue
+    }
+
+    const isOverlayerAppearanceChanged =
       fromOverlayerSetting.visible !== overlayerSetting.visible ||
       fromOverlayerSetting.opacity !== overlayerSetting.opacity
-    ) {
-      overlayerChanges.push({
-        type: 'update',
-        overlayerId: overlayerSetting.overlayerId,
-        overlayerAppearance: extractOverlayerAppearance(overlayerSetting),
-      })
-    }
+    if (!isOverlayerAppearanceChanged) continue
+
+    overlayerChanges.push({
+      type: 'update',
+      overlayerId: overlayerSetting.overlayerId,
+      overlayerAppearance: extractOverlayerAppearance(overlayerSetting),
+    })
   }
 
-  const fromOverlayerOrder = (fromLayers?.overlayers ?? []).map(
+  const fromOverlayerOrder = fromLayers.overlayers.map(
     (overlayerSetting) => overlayerSetting.overlayerId,
   )
   const toOverlayerOrder = toLayers.overlayers.map(
@@ -87,7 +91,7 @@ export function findChangesBetweenLayers(
 
   return {
     baseLayerId:
-      fromLayers?.baseLayerId === toLayers.baseLayerId
+      fromLayers.baseLayerId === toLayers.baseLayerId
         ? null
         : toLayers.baseLayerId,
     overlayerChanges,

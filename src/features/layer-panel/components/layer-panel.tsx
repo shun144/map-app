@@ -10,7 +10,6 @@ import {
 } from '#/shared/map/api/update-layers'
 import { useLayerPanelStore } from '../stores/layer-panel-store'
 import type { ReactNode } from 'react'
-import type { Layers } from '#/shared/map/types'
 
 type Props = {
   mapId: string
@@ -25,10 +24,6 @@ export function LayerPanel({ mapId, children }: Props) {
   const switchBetweenOpenAndClosed = useLayerPanelStore(
     (store) => store.switchBetweenOpenAndClosed,
   )
-
-  const writeChangedLayersStateToCache = (
-    updateLayers: (current: Layers) => Layers,
-  ) => writeLayersStateToCache(updateLayers(layersState))
 
   // 保存上は先頭が最下層だが、パネルでは手前に描かれるものを上に見せたいので逆順で表示する
   const overlayersTopFirst = [...layersState.overlayers].reverse()
@@ -61,8 +56,8 @@ export function LayerPanel({ mapId, children }: Props) {
                     name="baseLayer"
                     checked={layersState.baseLayerId === baseLayer.id}
                     onChange={() =>
-                      writeChangedLayersStateToCache((current) =>
-                        updateBaseLayer(current, baseLayer.id),
+                      writeLayersStateToCache(
+                        updateBaseLayer(layersState, baseLayer.id),
                       )
                     }
                   />
@@ -90,9 +85,9 @@ export function LayerPanel({ mapId, children }: Props) {
                         id={`overlayer-${overlayerSetting.overlayerId}`}
                         checked={overlayerSetting.visible}
                         onChange={(event) =>
-                          writeChangedLayersStateToCache((current) =>
+                          writeLayersStateToCache(
                             updateOverlayerVisibility(
-                              current,
+                              layersState,
                               overlayerSetting.overlayerId,
                               event.target.checked,
                             ),
@@ -116,9 +111,9 @@ export function LayerPanel({ mapId, children }: Props) {
                         aria-label={`${overlayerDefinition.label}を上へ`}
                         disabled={positionFromTop === 0}
                         onClick={() =>
-                          writeChangedLayersStateToCache((current) =>
+                          writeLayersStateToCache(
                             moveOverlayerOneStep(
-                              current,
+                              layersState,
                               overlayerSetting.overlayerId,
                               'up',
                             ),
@@ -135,9 +130,9 @@ export function LayerPanel({ mapId, children }: Props) {
                           positionFromTop === overlayersTopFirst.length - 1
                         }
                         onClick={() =>
-                          writeChangedLayersStateToCache((current) =>
+                          writeLayersStateToCache(
                             moveOverlayerOneStep(
-                              current,
+                              layersState,
                               overlayerSetting.overlayerId,
                               'down',
                             ),
@@ -158,9 +153,9 @@ export function LayerPanel({ mapId, children }: Props) {
                         value={overlayerSetting.opacity}
                         disabled={!overlayerSetting.visible}
                         onChange={(event) =>
-                          writeChangedLayersStateToCache((current) =>
+                          writeLayersStateToCache(
                             updateOverlayerOpacity(
-                              current,
+                              layersState,
                               overlayerSetting.overlayerId,
                               Number(event.target.value),
                             ),

@@ -144,6 +144,28 @@ const value = { mapController, setMapController }
 
 型はファイルの中だけで使うので、コンポーネント名を繰り返さない。
 
+### 長い条件は、意味が分かる名前の定数に入れてから使う
+
+`&&` や `||` で複数の比較をつなぐ条件は、`if` に直接書かず、何を判定しているかが分かる名前の定数に入れる。読み手が比較を1つずつ読んで意味を組み立てなくても、名前だけで判定の内容が分かるようにするため。
+
+```ts
+// NG: 比較を全部読まないと、何を判定しているか分からない
+if (
+  queryCacheEvent.type !== 'updated' ||
+  queryCacheEvent.query.queryHash !== hashKey(mapInfoQueryKey(mapId))
+) {
+  return
+}
+
+// OK: 名前で「地図情報が更新されたか」を判定していると分かる
+const isMapInfoUpdated =
+  queryCacheEvent.type === 'updated' &&
+  queryCacheEvent.query.queryHash === hashKey(mapInfoQueryKey(mapId))
+if (!isMapInfoUpdated) return
+```
+
+- 定数の名前は `is`・`has` などで始め、条件が成り立つときの意味を肯定形で表す
+
 ## コメント
 
 ### 書くのは「なぜ」だけ

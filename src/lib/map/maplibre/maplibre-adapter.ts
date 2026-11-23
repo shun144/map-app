@@ -352,6 +352,10 @@ export const createMapLibreMap: MapFactory = (
       return () => map.off('movestart', listener)
     },
 
+    /**
+     * レイヤーやソースを1つずつ消さないのは、map.remove() がレイヤー・ソースを破棄し、
+     * map.on で登録したイベントもすべて外すため
+     */
     destroy: () => map.remove(),
   }
 
