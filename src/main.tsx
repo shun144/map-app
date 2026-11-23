@@ -13,13 +13,12 @@ async function bootstrap() {
   const router = createAppRouter({ queryClient, repositories })
 
   const rootElement = document.getElementById('app')!
-  if (!rootElement.innerHTML) {
-    ReactDOM.createRoot(rootElement).render(
-      <AppProvider queryClient={queryClient} repositories={repositories}>
-        <RouterProvider router={router} />
-      </AppProvider>,
-    )
-  }
+  if (rootElement.innerHTML) return
+  ReactDOM.createRoot(rootElement).render(
+    <AppProvider queryClient={queryClient} repositories={repositories}>
+      <RouterProvider router={router} />
+    </AppProvider>,
+  )
 }
 
 void bootstrap()

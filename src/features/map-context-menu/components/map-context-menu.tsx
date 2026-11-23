@@ -31,9 +31,8 @@ export function MapContextMenu() {
     }
     // 右クリックで別の位置に開き直すときも、いったんここで閉じてから右クリックの購読で開き直す
     const closeMenuOnPointerDownOutside = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpenedRightClick(null)
-      }
+      if (menuRef.current?.contains(event.target as Node)) return
+      setOpenedRightClick(null)
     }
     document.addEventListener('keydown', closeMenuOnEscape)
     document.addEventListener('pointerdown', closeMenuOnPointerDownOutside)

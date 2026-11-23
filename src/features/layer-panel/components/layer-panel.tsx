@@ -72,23 +72,23 @@ export function LayerPanel({ mapId, children }: Props) {
               オーバーレイヤー（上ほど手前）
             </legend>
             <ul className="space-y-3">
-              {overlayersTopFirst.map((overlayerSetting, positionFromTop) => {
+              {overlayersTopFirst.map((overlayer, positionFromTop) => {
                 const overlayerDefinition = findOverlayerDefinition(
-                  overlayerSetting.overlayerId,
+                  overlayer.id,
                 )
                 if (!overlayerDefinition) return null
                 return (
-                  <li key={overlayerSetting.overlayerId} className="space-y-1">
+                  <li key={overlayer.id} className="space-y-1">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id={`overlayer-${overlayerSetting.overlayerId}`}
-                        checked={overlayerSetting.visible}
+                        id={`overlayer-${overlayer.id}`}
+                        checked={overlayer.appearance.visible}
                         onChange={(event) =>
                           writeLayersStateToCache(
                             updateOverlayerVisibility(
                               layersState,
-                              overlayerSetting.overlayerId,
+                              overlayer.id,
                               event.target.checked,
                             ),
                           )
@@ -101,7 +101,7 @@ export function LayerPanel({ mapId, children }: Props) {
                         }}
                       />
                       <label
-                        htmlFor={`overlayer-${overlayerSetting.overlayerId}`}
+                        htmlFor={`overlayer-${overlayer.id}`}
                         className="flex-1"
                       >
                         {overlayerDefinition.label}
@@ -114,7 +114,7 @@ export function LayerPanel({ mapId, children }: Props) {
                           writeLayersStateToCache(
                             moveOverlayerOneStep(
                               layersState,
-                              overlayerSetting.overlayerId,
+                              overlayer.id,
                               'up',
                             ),
                           )
@@ -133,7 +133,7 @@ export function LayerPanel({ mapId, children }: Props) {
                           writeLayersStateToCache(
                             moveOverlayerOneStep(
                               layersState,
-                              overlayerSetting.overlayerId,
+                              overlayer.id,
                               'down',
                             ),
                           )
@@ -150,13 +150,13 @@ export function LayerPanel({ mapId, children }: Props) {
                         min={0}
                         max={1}
                         step={0.05}
-                        value={overlayerSetting.opacity}
-                        disabled={!overlayerSetting.visible}
+                        value={overlayer.appearance.opacity}
+                        disabled={!overlayer.appearance.visible}
                         onChange={(event) =>
                           writeLayersStateToCache(
                             updateOverlayerOpacity(
                               layersState,
-                              overlayerSetting.overlayerId,
+                              overlayer.id,
                               Number(event.target.value),
                             ),
                           )
@@ -164,7 +164,7 @@ export function LayerPanel({ mapId, children }: Props) {
                         className="flex-1"
                       />
                       <span className="w-8 text-right tabular-nums">
-                        {Math.round(overlayerSetting.opacity * 100)}%
+                        {Math.round(overlayer.appearance.opacity * 100)}%
                       </span>
                     </label>
                   </li>

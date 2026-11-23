@@ -11,7 +11,7 @@
 | 例                                                                  | 判断     | 理由                                                                           |
 | ------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
 | map-viewer（表示状態の保存・復元）と feature-info（地物の情報表示） | 分ける   | 地物の情報表示は、ビューポートやレイヤー構成の保存・復元を使わずに成り立つ     |
-| map-viewer と reset-view（初期位置に戻る）                          | 分ける   | 地図を初期位置へ動かすだけで、保存・復元もレイヤーも使わない                   |
+| map-viewer と reset-view（保存した位置に戻る）                      | 分ける   | キャッシュのビューポートへ地図を動かすだけで、保存もレイヤーも使わない         |
 | map-viewer（地図への反映）と layer-panel（レイヤーパネル）          | 分ける   | どちらも shared/map のレイヤー構成を読み書きするだけで、互いのコードを使わない |
 | ビューポートとレイヤー構成                                          | 分けない | 保存ボタンで両方を1つのレコードとして保存するため、片方だけでは成り立たない    |
 
@@ -53,15 +53,15 @@ mutationFn: (mapSnapshot: MapSnapshot) => repository.save(mapId, mapSnapshot)
 
 `state`・`data`・`value`・`controller`・`next`・`s` のような、何を指すか読み手が推測しないといけない名前は使わない。
 
-| NG           | OK                    |
-| ------------ | --------------------- |
-| `state`      | `layersState`         |
-| `controller` | `mapController`       |
-| `setting`    | `overlayerSetting`    |
-| `definition` | `overlayerDefinition` |
-| `diff`       | `layersChanges`       |
-| `applied`    | `lastDrawnLayers`     |
-| `(s) => ...` | `(current) => ...`    |
+| NG           | OK                      |
+| ------------ | ----------------------- |
+| `state`      | `layersState`           |
+| `controller` | `mapController`         |
+| `entry`      | `overlayerCatalogEntry` |
+| `definition` | `overlayerDefinition`   |
+| `diff`       | `layersChanges`         |
+| `applied`    | `lastDrawnLayers`       |
+| `(s) => ...` | `(current) => ...`      |
 
 ### 名前は長くてもよいので、役割と処理内容が分かるものにする
 
@@ -92,16 +92,23 @@ mutationFn: (mapSnapshot: MapSnapshot) => repository.save(mapId, mapSnapshot)
 | 保存先に保存する                             | `save〜`                                                     | `saveCurrentMapSnapshot`                               |
 | 実在するもの（地図・ストア）の値を書き換える | `set〜`・`add〜`・`remove〜`                                 | `mapController.setBaseLayer`、`setSelectedFeature`     |
 
+値を読み出す関数は、必ず値が返るかどうかで `get` と `find` を使い分ける。名前だけで、戻り値が `undefined`・`null` になりうるかを読み手が判断できるようにするため。
+
+| 動詞   | 使うとき                                                                | 例                                              |
+| ------ | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| `get`  | 必ずあるものを取り出す。手元にある値をそのまま返すことが多い            | `mapController.getViewport()`、`getBaseLayer`   |
+| `find` | 探す。見つからない可能性があり、戻り値が `undefined`・`null` になりうる | `findOverlayerDefinition`、`findLngLatInSearch` |
+
 ### 複数のものをまとめた値は、名前でも複数だと分かるようにする
 
-修飾する語を単数形にする英語の慣習（`layer state`、`user list`）より、読み手が誤読しないことを優先する。単数形の修飾語だと「1つ分の状態」と読めてしまい、1つ分を表す別の型（例: `OverlayerSetting`）と取り違えやすい。
+修飾する語を単数形にする英語の慣習（`layer state`、`user list`）より、読み手が誤読しないことを優先する。単数形の修飾語だと「1つ分の状態」と読めてしまい、1つ分を表す別の型（例: `OverlayerAppearance`）と取り違えやすい。
 
 | NG           | OK            | 中身                                                   |
 | ------------ | ------------- | ------------------------------------------------------ |
 | `Layer`      | `Layers`      | ベースレイヤーの選択と、全オーバーレイヤーの設定（型） |
 | `layerState` | `layersState` | キャッシュにある、そのレイヤー構成（状態の変数）       |
 
-- 1つ分を表すものは単数形のままにする（例: `OverlayerSetting`、`overlayerSetting`）
+- 1つ分を表すものは単数形のままにする（例: `OverlayerAppearance`、`overlayerDefinition`）
 - 保存データのプロパティ名も同じ規則に従う。保存データのプロパティ名を変えるときは、保存先の版番号を上げる（ADR 0004）
 
 ### `State` は、Zustand か TanStack Query が管理する状態の変数名にだけ使う
@@ -165,6 +172,58 @@ if (!isMapInfoUpdated) return
 ```
 
 - 定数の名前は `is`・`has` などで始め、条件が成り立つときの意味を肯定形で表す
+
+### 条件を満たさないときは早期 return で抜け、本来の処理を `if` の中に入れない
+
+関数は `return`、ループは `continue`、`switch` の `case` は `break` で先に抜け、本来の処理はネストさせずに書く。`if` のブロックや `else` が重なると、どの条件のときに何が起きるかを、読み手がネストをたどって組み立てないといけなくなるため。
+
+```ts
+// NG: 本来の処理（addOverlayer）が if の中に入っている
+for (const overlayer of layers.overlayers) {
+  const overlayerDefinition = findOverlayerDefinition(overlayer.id)
+  if (overlayerDefinition) {
+    mapController.addOverlayer(overlayerDefinition, overlayer.appearance)
+  }
+}
+
+// OK: 定義が見つからないときは先に抜け、本来の処理をネストさせない
+for (const overlayer of layers.overlayers) {
+  const overlayerDefinition = findOverlayerDefinition(overlayer.id)
+  if (!overlayerDefinition) continue
+  mapController.addOverlayer(overlayerDefinition, overlayer.appearance)
+}
+```
+
+- `else if` を続けるより、場合ごとに処理して `return` / `continue` で抜ける
+- JSX の中の条件付き表示（`{isOpen && ...}` や三項演算子）は対象にしない
+
+### 条件は肯定形を優先して書く
+
+`if` の条件は、`!` を付けた否定形より、肯定形で書けるなら肯定形にする。否定形は「〜でないとき」を読み手が頭の中で反転させないといけず、誤読を招きやすいため。
+
+```ts
+// NG: 「前回描いた構成がないとき」を先に書いている
+if (!lastDrawnLayers) {
+  drawAllLayersOnMap(mapController, nextLayers)
+  lastDrawnLayers = nextLayers
+  return
+}
+drawChangedLayersOnMap(mapController, lastDrawnLayers, nextLayers)
+lastDrawnLayers = nextLayers
+
+// OK: 「前回描いた構成があるとき」を先に書く
+if (lastDrawnLayers) {
+  drawChangedLayersOnMap(mapController, lastDrawnLayers, nextLayers)
+  lastDrawnLayers = nextLayers
+  return
+}
+drawAllLayersOnMap(mapController, nextLayers)
+lastDrawnLayers = nextLayers
+```
+
+- どちらの場合も処理があるときは、肯定形の条件の側を `if` に書く
+- 値が見つからないときに抜けるだけの確認（`if (!overlayerDefinition) continue`）は否定形でよい。肯定形にすると本来の処理が `if` の中に入り、早期 return の規約に反するため
+- 条件を定数に入れるときも、定数名は肯定形にする（`isSavable` であって `isNotSavable` ではない）
 
 ## コメント
 

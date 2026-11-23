@@ -1,6 +1,6 @@
 import type { BaseLayerDefinition } from '#/lib/map/types'
 import type { OverlayerCatalogEntry } from '../catalog/overlayer-catalog'
-import type { Layers, OverlayerSetting } from '../types'
+import type { Layers } from '../types'
 
 export const DEFAULT_OVERLAYER_OPACITY = 1
 
@@ -21,35 +21,34 @@ export function createLayersMatchingCatalog(
     overlayerCatalog.map((overlayerCatalogEntry) => overlayerCatalogEntry.id),
   )
 
-  const keptOverlayerSettings = (storedLayers?.overlayers ?? []).filter(
-    (overlayerSetting) =>
-      overlayerIdsInCatalog.has(overlayerSetting.overlayerId),
+  const keptOverlayers = (storedLayers?.overlayers ?? []).filter((overlayer) =>
+    overlayerIdsInCatalog.has(overlayer.id),
   )
   const keptOverlayerIds = new Set(
-    keptOverlayerSettings.map(
-      (overlayerSetting) => overlayerSetting.overlayerId,
-    ),
+    keptOverlayers.map((overlayer) => overlayer.id),
   )
-  const addedOverlayerSettings: Array<OverlayerSetting> = overlayerCatalog
+  const addedOverlayers: Layers['overlayers'] = overlayerCatalog
     .filter(
       (overlayerCatalogEntry) =>
         !keptOverlayerIds.has(overlayerCatalogEntry.id),
     )
     .map((overlayerCatalogEntry) => ({
-      overlayerId: overlayerCatalogEntry.id,
-      visible: overlayerCatalogEntry.visibleWhenAdded,
-      opacity: DEFAULT_OVERLAYER_OPACITY,
+      id: overlayerCatalogEntry.id,
+      appearance: {
+        visible: overlayerCatalogEntry.visibleWhenAdded,
+        opacity: DEFAULT_OVERLAYER_OPACITY,
+      },
     }))
 
-  const baseLayerExists = baseLayers.some(
+  const hasStoredBaseLayerInList = baseLayers.some(
     (baseLayer) => baseLayer.id === storedLayers?.baseLayerId,
   )
 
   return {
     baseLayerId:
-      storedLayers && baseLayerExists
+      storedLayers && hasStoredBaseLayerInList
         ? storedLayers.baseLayerId
         : defaultBaseLayerId,
-    overlayers: [...keptOverlayerSettings, ...addedOverlayerSettings],
+    overlayers: [...keptOverlayers, ...addedOverlayers],
   }
 }

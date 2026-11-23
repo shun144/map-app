@@ -38,7 +38,7 @@ export const BASE_LAYERS: ReadonlyArray<BaseLayerDefinition> = [
 
 export const DEFAULT_BASE_LAYER_ID = 'gsi-pale'
 
-export function findBaseLayer(baseLayerId: string): BaseLayerDefinition {
+export function getBaseLayer(baseLayerId: string): BaseLayerDefinition {
   return (
     BASE_LAYERS.find((baseLayer) => baseLayer.id === baseLayerId) ??
     BASE_LAYERS.find((baseLayer) => baseLayer.id === DEFAULT_BASE_LAYER_ID)!

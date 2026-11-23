@@ -5,13 +5,14 @@ import type { LngLat } from '#/lib/map/types'
  * ルートの validateSearch で使い、画面には検証済みの値だけを渡す。
  */
 
-const readNumberInRange = (value: unknown, min: number, max: number) =>
-  typeof value === 'number' &&
-  Number.isFinite(value) &&
-  value >= min &&
-  value <= max
-    ? value
-    : undefined
+function readNumberInRange(searchValue: unknown, min: number, max: number) {
+  const isNumberInRange =
+    typeof searchValue === 'number' &&
+    Number.isFinite(searchValue) &&
+    searchValue >= min &&
+    searchValue <= max
+  return isNumberInRange ? searchValue : undefined
+}
 
 export type LngLatSearch = {
   lng?: number
@@ -42,5 +43,6 @@ export function readViewportSearch(
 
 /** 経度と緯度の両方がそろっていないときは null */
 export function findLngLatInSearch({ lng, lat }: LngLatSearch): LngLat | null {
-  return lng !== undefined && lat !== undefined ? { lng, lat } : null
+  const hasLngAndLat = lng !== undefined && lat !== undefined
+  return hasLngAndLat ? { lng, lat } : null
 }

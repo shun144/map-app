@@ -3,7 +3,7 @@ import { useMapContext } from './map-provider'
 import type { Viewport } from './types'
 
 type Props = {
-  /** 生成後の変更を地図へ反映しないのは、保存のたびに地図を動かす更新ループを避けるため（ADR 0001） */
+  /** 地図を作ったあとに initialViewport が変わっても地図を動かさないのは、保存のたびに地図を動かす更新ループを避けるため（ADR 0001） */
   initialViewport: Viewport
   className?: string
 }

@@ -1,88 +1,77 @@
 import type { OverlayerAppearance } from '#/lib/map/types'
-import type { Layers, OverlayerSetting } from '#/shared/map/types'
+import type { Layers } from '#/shared/map/types'
 
-export type OverlayerChange =
+export type ChangedOverlayer =
   | {
       type: 'add'
-      overlayerId: string
-      overlayerAppearance: OverlayerAppearance
+      id: string
+      appearance: OverlayerAppearance
     }
-  | { type: 'remove'; overlayerId: string }
+  | { type: 'remove'; id: string }
   | {
       type: 'update'
-      overlayerId: string
-      overlayerAppearance: OverlayerAppearance
+      id: string
+      appearance: OverlayerAppearance
     }
 
 export type LayersChanges = {
   /** 変わったときだけベースレイヤーの ID */
   baseLayerId: string | null
-  overlayerChanges: Array<OverlayerChange>
+  changedOverlayers: Array<ChangedOverlayer>
   /** 重なり順が変わったときだけ新しい順（先頭が最下層） */
   overlayerOrder: Array<string> | null
 }
-
-const extractOverlayerAppearance = ({
-  visible,
-  opacity,
-}: OverlayerSetting): OverlayerAppearance => ({
-  visible,
-  opacity,
-})
 
 export function findChangesBetweenLayers(
   fromLayers: Layers,
   toLayers: Layers,
 ): LayersChanges {
-  const fromOverlayerSettingsById = new Map(
-    fromLayers.overlayers.map((overlayerSetting) => [
-      overlayerSetting.overlayerId,
-      overlayerSetting,
+  const fromOverlayersById = new Map(
+    fromLayers.overlayers.map((fromOverlayer) => [
+      fromOverlayer.id,
+      fromOverlayer,
     ]),
   )
   const toOverlayerIds = new Set(
-    toLayers.overlayers.map((overlayerSetting) => overlayerSetting.overlayerId),
+    toLayers.overlayers.map((toOverlayer) => toOverlayer.id),
   )
 
-  const overlayerChanges: Array<OverlayerChange> = []
+  const changedOverlayers: Array<ChangedOverlayer> = []
 
-  for (const overlayerId of fromOverlayerSettingsById.keys()) {
+  for (const overlayerId of fromOverlayersById.keys()) {
     if (toOverlayerIds.has(overlayerId)) continue
-    overlayerChanges.push({ type: 'remove', overlayerId })
+    changedOverlayers.push({ type: 'remove', id: overlayerId })
   }
 
-  for (const overlayerSetting of toLayers.overlayers) {
-    const fromOverlayerSetting = fromOverlayerSettingsById.get(
-      overlayerSetting.overlayerId,
-    )
-    if (!fromOverlayerSetting) {
-      overlayerChanges.push({
+  for (const toOverlayer of toLayers.overlayers) {
+    const fromOverlayer = fromOverlayersById.get(toOverlayer.id)
+    if (!fromOverlayer) {
+      changedOverlayers.push({
         type: 'add',
-        overlayerId: overlayerSetting.overlayerId,
-        overlayerAppearance: extractOverlayerAppearance(overlayerSetting),
+        id: toOverlayer.id,
+        appearance: toOverlayer.appearance,
       })
       continue
     }
 
     const isOverlayerAppearanceChanged =
-      fromOverlayerSetting.visible !== overlayerSetting.visible ||
-      fromOverlayerSetting.opacity !== overlayerSetting.opacity
+      fromOverlayer.appearance.visible !== toOverlayer.appearance.visible ||
+      fromOverlayer.appearance.opacity !== toOverlayer.appearance.opacity
+
     if (!isOverlayerAppearanceChanged) continue
 
-    overlayerChanges.push({
+    changedOverlayers.push({
       type: 'update',
-      overlayerId: overlayerSetting.overlayerId,
-      overlayerAppearance: extractOverlayerAppearance(overlayerSetting),
+      id: toOverlayer.id,
+      appearance: toOverlayer.appearance,
     })
   }
 
   const fromOverlayerOrder = fromLayers.overlayers.map(
-    (overlayerSetting) => overlayerSetting.overlayerId,
+    (overlayer) => overlayer.id,
   )
-  const toOverlayerOrder = toLayers.overlayers.map(
-    (overlayerSetting) => overlayerSetting.overlayerId,
-  )
-  const orderChanged =
+  const toOverlayerOrder = toLayers.overlayers.map((overlayer) => overlayer.id)
+  const isOverlayerOrderChanged =
     fromOverlayerOrder.length !== toOverlayerOrder.length ||
     fromOverlayerOrder.some(
       (overlayerId, orderPosition) =>
@@ -94,7 +83,7 @@ export function findChangesBetweenLayers(
       fromLayers.baseLayerId === toLayers.baseLayerId
         ? null
         : toLayers.baseLayerId,
-    overlayerChanges,
-    overlayerOrder: orderChanged ? toOverlayerOrder : null,
+    changedOverlayers,
+    overlayerOrder: isOverlayerOrderChanged ? toOverlayerOrder : null,
   }
 }

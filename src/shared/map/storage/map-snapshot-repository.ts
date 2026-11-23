@@ -39,11 +39,12 @@ function isLayers(value: unknown): value is Layers {
     typeof value.baseLayerId === 'string' &&
     Array.isArray(value.overlayers) &&
     value.overlayers.every(
-      (overlayerSetting) =>
-        isRecord(overlayerSetting) &&
-        typeof overlayerSetting.overlayerId === 'string' &&
-        typeof overlayerSetting.visible === 'boolean' &&
-        typeof overlayerSetting.opacity === 'number',
+      (overlayer) =>
+        isRecord(overlayer) &&
+        typeof overlayer.id === 'string' &&
+        isRecord(overlayer.appearance) &&
+        typeof overlayer.appearance.visible === 'boolean' &&
+        typeof overlayer.appearance.opacity === 'number',
     )
   )
 }

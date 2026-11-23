@@ -46,10 +46,11 @@ function convertPointsToGeoJson(points: ReadonlyArray<MapPoint>): GeoJsonData {
 const BASE_LAYER_SOURCE_ID = 'baseLayer'
 const BASE_LAYER_STYLE_LAYER_ID = 'baseLayer'
 
-const sourceIdOfOverlayer = (overlayerId: string) => `overlayer:${overlayerId}`
+const getSourceIdOfOverlayer = (overlayerId: string) =>
+  `overlayer:${overlayerId}`
 
 /** 面を塗りと輪郭の2枚に分けるのは、MapLibre の fill スタイルレイヤーでは輪郭線の太さを指定できないため */
-function styleLayerIdsOfOverlayer(
+function getStyleLayerIdsOfOverlayer(
   overlayerDefinition: OverlayerDefinition,
 ): Array<string> {
   const styleLayerIdPrefix = `overlayer:${overlayerDefinition.id}`
@@ -62,10 +63,10 @@ function createStyleLayersForOverlayer(
   overlayerDefinition: OverlayerDefinition,
   overlayerAppearance: OverlayerAppearance,
 ): Array<AddLayerObject> {
-  const overlayerSourceId = sourceIdOfOverlayer(overlayerDefinition.id)
+  const overlayerSourceId = getSourceIdOfOverlayer(overlayerDefinition.id)
   const visibility = overlayerAppearance.visible ? 'visible' : 'none'
   const [mainStyleLayerId, outlineStyleLayerId] =
-    styleLayerIdsOfOverlayer(overlayerDefinition)
+    getStyleLayerIdsOfOverlayer(overlayerDefinition)
 
   switch (overlayerDefinition.geometryKind) {
     case 'point':
@@ -146,8 +147,11 @@ export const createMapLibreMap: MapFactory = (
   let styleLoaded = false
   const operationsWaitingForStyleLoad: Array<() => void> = []
   const runAfterStyleLoaded = (operationOnMap: () => void) => {
-    if (styleLoaded) operationOnMap()
-    else operationsWaitingForStyleLoad.push(operationOnMap)
+    if (styleLoaded) {
+      operationOnMap()
+      return
+    }
+    operationsWaitingForStyleLoad.push(operationOnMap)
   }
   map.once('load', () => {
     styleLoaded = true
@@ -162,14 +166,12 @@ export const createMapLibreMap: MapFactory = (
   /** addOverlayer より先に setOverlayerPoints が呼ばれても点を失わないよう、渡された点を覚えておく */
   const pointsByOverlayerId = new Map<string, ReadonlyArray<MapPoint>>()
 
-  const lowestOverlayerStyleLayerId = (): string | undefined => {
+  const findLowestOverlayerStyleLayerId = (): string | undefined => {
     const lowestOverlayerId = overlayerOrder.at(0)
-    const overlayerDefinition = lowestOverlayerId
-      ? overlayerDefinitionsById.get(lowestOverlayerId)
-      : undefined
-    return overlayerDefinition
-      ? styleLayerIdsOfOverlayer(overlayerDefinition)[0]
-      : undefined
+    if (!lowestOverlayerId) return undefined
+    const overlayerDefinition = overlayerDefinitionsById.get(lowestOverlayerId)
+    if (!overlayerDefinition) return undefined
+    return getStyleLayerIdsOfOverlayer(overlayerDefinition)[0]
   }
 
   const readViewportFromMap = (): Viewport => {
@@ -177,13 +179,13 @@ export const createMapLibreMap: MapFactory = (
     return { center: { lng: center.lng, lat: center.lat }, zoom: map.getZoom() }
   }
 
-  const clickableStyleLayerIds = () =>
+  const listClickableStyleLayerIds = () =>
     [...overlayerDefinitionsById.values()]
-      .flatMap(styleLayerIdsOfOverlayer)
+      .flatMap(getStyleLayerIdsOfOverlayer)
       .filter((styleLayerId) => map.getLayer(styleLayerId))
 
   const findFeatureUnderPointer = (event: MapMouseEvent): MapFeature | null => {
-    const styleLayerIds = clickableStyleLayerIds()
+    const styleLayerIds = listClickableStyleLayerIds()
     if (styleLayerIds.length === 0) return null
     const featureUnderPointer = map
       .queryRenderedFeatures(event.point, { layers: styleLayerIds })
@@ -236,14 +238,14 @@ export const createMapLibreMap: MapFactory = (
             type: 'raster',
             source: BASE_LAYER_SOURCE_ID,
           },
-          lowestOverlayerStyleLayerId(),
+          findLowestOverlayerStyleLayerId(),
         )
       }),
 
     addOverlayer: (overlayerDefinition, overlayerAppearance) =>
       runAfterStyleLoaded(() => {
         if (overlayerDefinitionsById.has(overlayerDefinition.id)) return
-        map.addSource(sourceIdOfOverlayer(overlayerDefinition.id), {
+        map.addSource(getSourceIdOfOverlayer(overlayerDefinition.id), {
           type: 'geojson',
           data:
             overlayerDefinition.dataUrl ??
@@ -266,12 +268,12 @@ export const createMapLibreMap: MapFactory = (
       runAfterStyleLoaded(() => {
         const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
         if (!overlayerDefinition) return
-        styleLayerIdsOfOverlayer(overlayerDefinition).forEach(
+        getStyleLayerIdsOfOverlayer(overlayerDefinition).forEach(
           (styleLayerId) => {
             if (map.getLayer(styleLayerId)) map.removeLayer(styleLayerId)
           },
         )
-        map.removeSource(sourceIdOfOverlayer(overlayerId))
+        map.removeSource(getSourceIdOfOverlayer(overlayerId))
         overlayerDefinitionsById.delete(overlayerId)
         overlayerOrder = overlayerOrder.filter((id) => id !== overlayerId)
       }),
@@ -285,19 +287,23 @@ export const createMapLibreMap: MapFactory = (
           overlayerDefinition,
           overlayerAppearance,
         ).forEach((styleLayer) => {
-          if (!('layout' in styleLayer) || !('paint' in styleLayer)) return
+          const hasLayoutAndPaint =
+            'layout' in styleLayer && 'paint' in styleLayer
+          if (!hasLayoutAndPaint) return
           map.setLayoutProperty(
             styleLayer.id,
             'visibility',
             overlayerAppearance.visible ? 'visible' : 'none',
           )
           Object.entries(styleLayer.paint ?? {})
-            .filter(([property]) => property.endsWith('opacity'))
-            .forEach(([property, value]) =>
+            .filter(([paintPropertyName]) =>
+              paintPropertyName.endsWith('opacity'),
+            )
+            .forEach(([paintPropertyName, paintPropertyValue]) =>
               map.setPaintProperty(
                 styleLayer.id,
-                property as PaintProperty,
-                value,
+                paintPropertyName as PaintProperty,
+                paintPropertyValue,
               ),
             )
         })
@@ -309,7 +315,7 @@ export const createMapLibreMap: MapFactory = (
         overlayerIds.forEach((overlayerId) => {
           const overlayerDefinition = overlayerDefinitionsById.get(overlayerId)
           if (!overlayerDefinition) return
-          styleLayerIdsOfOverlayer(overlayerDefinition).forEach(
+          getStyleLayerIdsOfOverlayer(overlayerDefinition).forEach(
             (styleLayerId) => map.moveLayer(styleLayerId),
           )
         })
@@ -323,28 +329,28 @@ export const createMapLibreMap: MapFactory = (
       runAfterStyleLoaded(() => {
         // ソースがまだないときは、addOverlayer が pointsByOverlayerId から点を読んで作る
         map
-          .getSource<GeoJSONSource>(sourceIdOfOverlayer(overlayerId))
+          .getSource<GeoJSONSource>(getSourceIdOfOverlayer(overlayerId))
           ?.setData(convertPointsToGeoJson(points))
       })
     },
 
     subscribeToFeatureClick: (listener) => {
-      const handler = (event: MapMouseEvent) =>
+      const notifyFeatureClick = (event: MapMouseEvent) =>
         listener(findFeatureUnderPointer(event))
-      map.on('click', handler)
-      return () => map.off('click', handler)
+      map.on('click', notifyFeatureClick)
+      return () => map.off('click', notifyFeatureClick)
     },
 
     subscribeToRightClick: (listener) => {
-      const handler = (event: MapMouseEvent) => {
+      const notifyRightClick = (event: MapMouseEvent) => {
         event.originalEvent.preventDefault()
         listener({
           lngLat: { lng: event.lngLat.lng, lat: event.lngLat.lat },
           pointInMap: { x: event.point.x, y: event.point.y },
         })
       }
-      map.on('contextmenu', handler)
-      return () => map.off('contextmenu', handler)
+      map.on('contextmenu', notifyRightClick)
+      return () => map.off('contextmenu', notifyRightClick)
     },
 
     subscribeToMoveStart: (listener) => {

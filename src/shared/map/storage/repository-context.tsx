@@ -5,13 +5,12 @@ import type { MapSnapshotRepository } from './map-snapshot-repository'
 const MapSnapshotRepositoryContext =
   createContext<MapSnapshotRepository | null>(null)
 
-export function MapSnapshotRepositoryProvider({
-  repository,
-  children,
-}: {
+type Props = {
   repository: MapSnapshotRepository
   children: ReactNode
-}) {
+}
+
+export function MapSnapshotRepositoryProvider({ repository, children }: Props) {
   return (
     <MapSnapshotRepositoryContext value={repository}>
       {children}

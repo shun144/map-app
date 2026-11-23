@@ -1,9 +1,9 @@
 import { useSelectedFeatureStore } from '../stores/selected-feature-store'
 
-const formatValue = (value: unknown) =>
-  typeof value === 'object' && value !== null
-    ? JSON.stringify(value)
-    : String(value)
+function formatPropertyValue(propertyValue: unknown) {
+  const isObject = typeof propertyValue === 'object' && propertyValue !== null
+  return isObject ? JSON.stringify(propertyValue) : String(propertyValue)
+}
 
 export function FeatureInfoPanel() {
   const selectedFeature = useSelectedFeatureStore(
@@ -24,7 +24,9 @@ export function FeatureInfoPanel() {
             {selectedFeature.overlayerLabel}
           </p>
           <h2 className="font-semibold">
-            {formatValue(selectedFeature.properties.name ?? '（名称なし）')}
+            {formatPropertyValue(
+              selectedFeature.properties.name ?? '（名称なし）',
+            )}
           </h2>
         </div>
         <button
@@ -47,7 +49,7 @@ export function FeatureInfoPanel() {
                 {propertyName}
               </th>
               <td className="px-4 py-2 break-all">
-                {formatValue(propertyValue)}
+                {formatPropertyValue(propertyValue)}
               </td>
             </tr>
           ))}

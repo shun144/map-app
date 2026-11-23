@@ -28,9 +28,8 @@ export function openAppDatabase(): Promise<AppDatabase> {
       // 古い版のストア名は現在のスキーマ型に含まれないため、型なしの DB として扱う
       const untypedDb = db as unknown as IDBPDatabase
       for (const legacyStoreName of ['viewports', 'layers', 'mapStates']) {
-        if (untypedDb.objectStoreNames.contains(legacyStoreName)) {
-          untypedDb.deleteObjectStore(legacyStoreName)
-        }
+        if (!untypedDb.objectStoreNames.contains(legacyStoreName)) continue
+        untypedDb.deleteObjectStore(legacyStoreName)
       }
       if (!db.objectStoreNames.contains('mapSnapshots')) {
         db.createObjectStore('mapSnapshots')

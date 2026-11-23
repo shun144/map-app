@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MapCanvas } from '#/lib/map/map-canvas'
 import { DEFAULT_MAP_ID } from '#/config/map'
 import { ESTATE_LOCATION_ZOOM } from '#/config/estate'
-import { useSavedViewport } from '#/shared/map/api/fetch-map-info'
+import { useSavedViewportState } from '#/shared/map/api/fetch-map-info'
 import { ResetViewportButton } from '#/features/reset-view/components/reset-viewport-button'
 import { useDrawLayersStateOnMap } from '#/features/map-viewer/hooks/use-draw-layers-state-on-map'
 import { SaveMapSnapshotButton } from '#/features/map-viewer/components/save-map-snapshot-button'
@@ -26,7 +26,7 @@ export function MapPage() {
 
 /** 地図を使うフックを PageMapProvider の内側で呼ぶため、MapPage から分けている */
 function MapPageContent() {
-  const savedViewport = useSavedViewport(DEFAULT_MAP_ID)
+  const savedViewport = useSavedViewportState(DEFAULT_MAP_ID)
   const viewportSearch = useSearch({ from: '/map' })
   const lngLatInSearch = findLngLatInSearch(viewportSearch)
   const navigate = useNavigate()
@@ -44,9 +44,8 @@ function MapPageContent() {
     viewportSearch.lat !== undefined ||
     viewportSearch.zoom !== undefined
   useEffect(() => {
-    if (hasViewportInSearch) {
-      void navigate({ to: '/map', search: {}, replace: true })
-    }
+    if (!hasViewportInSearch) return
+    void navigate({ to: '/map', search: {}, replace: true })
   }, [hasViewportInSearch, navigate])
 
   return (
@@ -72,7 +71,7 @@ function MapPageContent() {
         <FeatureInfoPanel />
       </div>
       <div className="absolute right-14 bottom-8">
-        <ResetViewportButton />
+        <ResetViewportButton mapId={DEFAULT_MAP_ID} />
       </div>
     </main>
   )

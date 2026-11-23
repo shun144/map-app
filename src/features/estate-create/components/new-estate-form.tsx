@@ -15,10 +15,11 @@ export function NewEstateForm({ lngLat, onCreated, onCancel }: Props) {
   const [estateName, setEstateName] = useState('')
   const { mutate, isPending, isError } = useCreateEstate()
   const trimmedEstateName = estateName.trim()
+  const isSavable = trimmedEstateName !== '' && !isPending
 
   const createEstate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (trimmedEstateName === '' || isPending) return
+    if (!isSavable) return
     mutate({ name: trimmedEstateName, lngLat }, { onSuccess: onCreated })
   }
 
@@ -45,7 +46,7 @@ export function NewEstateForm({ lngLat, onCreated, onCancel }: Props) {
         {/* 保存中に押せないようにするのは、同じ物件が2つ作られるのを防ぐため */}
         <button
           type="submit"
-          disabled={trimmedEstateName === '' || isPending}
+          disabled={!isSavable}
           className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {isPending ? '保存中…' : '保存'}

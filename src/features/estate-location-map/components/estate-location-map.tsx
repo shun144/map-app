@@ -4,7 +4,7 @@ import { useMapController } from '#/lib/map/map-provider'
 import { ESTATE_LOCATION_ZOOM } from '#/config/estate'
 import {
   DEFAULT_BASE_LAYER_ID,
-  findBaseLayer,
+  getBaseLayer,
 } from '#/shared/map/catalog/base-layers'
 import {
   ESTATE_OVERLAYER_ID,
@@ -33,7 +33,7 @@ export function EstateLocationMap({ lngLat, className }: Props) {
     const estateOverlayerDefinition =
       findOverlayerDefinition(ESTATE_OVERLAYER_ID)
     if (!estateOverlayerDefinition) return
-    mapController.setBaseLayer(findBaseLayer(DEFAULT_BASE_LAYER_ID))
+    mapController.setBaseLayer(getBaseLayer(DEFAULT_BASE_LAYER_ID))
     mapController.setOverlayerPoints(ESTATE_OVERLAYER_ID, [
       { lngLat: { lng, lat }, properties: {} },
     ])

@@ -1,4 +1,5 @@
-import type { Layers, OverlayerSetting } from '../types'
+import type { OverlayerAppearance } from '#/lib/map/types'
+import type { Layers } from '../types'
 
 /*
  * 操作を純粋関数に切り出したのは、画面も地図もなしで操作の正しさを確かめられるようにするため。
@@ -13,19 +14,22 @@ export function updateBaseLayer(layers: Layers, baseLayerId: string): Layers {
   return { ...layers, baseLayerId }
 }
 
-function updateOverlayerSetting(
+function updateOverlayerAppearance(
   layers: Layers,
   overlayerId: string,
-  makeUpdatedOverlayerSetting: (
-    overlayerSetting: OverlayerSetting,
-  ) => OverlayerSetting,
+  makeUpdatedAppearance: (
+    appearance: OverlayerAppearance,
+  ) => OverlayerAppearance,
 ): Layers {
   return {
     ...layers,
-    overlayers: layers.overlayers.map((overlayerSetting) =>
-      overlayerSetting.overlayerId === overlayerId
-        ? makeUpdatedOverlayerSetting(overlayerSetting)
-        : overlayerSetting,
+    overlayers: layers.overlayers.map((overlayer) =>
+      overlayer.id === overlayerId
+        ? {
+            ...overlayer,
+            appearance: makeUpdatedAppearance(overlayer.appearance),
+          }
+        : overlayer,
     ),
   }
 }
@@ -35,8 +39,8 @@ export function updateOverlayerVisibility(
   overlayerId: string,
   visible: boolean,
 ): Layers {
-  return updateOverlayerSetting(layers, overlayerId, (overlayerSetting) => ({
-    ...overlayerSetting,
+  return updateOverlayerAppearance(layers, overlayerId, (appearance) => ({
+    ...appearance,
     visible,
   }))
 }
@@ -47,8 +51,8 @@ export function updateOverlayerOpacity(
   opacity: number,
 ): Layers {
   const clampedOpacity = Math.min(1, Math.max(0, opacity))
-  return updateOverlayerSetting(layers, overlayerId, (overlayerSetting) => ({
-    ...overlayerSetting,
+  return updateOverlayerAppearance(layers, overlayerId, (appearance) => ({
+    ...appearance,
     opacity: clampedOpacity,
   }))
 }
@@ -59,17 +63,16 @@ export function moveOverlayerOneStep(
   direction: 'up' | 'down',
 ): Layers {
   const currentIndex = layers.overlayers.findIndex(
-    (overlayerSetting) => overlayerSetting.overlayerId === overlayerId,
+    (overlayer) => overlayer.id === overlayerId,
   )
   // 配列の先頭が最下層なので、「上へ」は添字を増やす方向
   const destinationIndex =
     direction === 'up' ? currentIndex + 1 : currentIndex - 1
-  if (
-    currentIndex < 0 ||
-    destinationIndex < 0 ||
-    destinationIndex >= layers.overlayers.length
-  )
-    return layers
+  const isMovable =
+    currentIndex >= 0 &&
+    destinationIndex >= 0 &&
+    destinationIndex < layers.overlayers.length
+  if (!isMovable) return layers
 
   const overlayers = [...layers.overlayers]
   ;[overlayers[currentIndex], overlayers[destinationIndex]] = [

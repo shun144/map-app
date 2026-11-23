@@ -11,7 +11,7 @@ import type {
  */
 
 /** ブラウザに残るデータの形が将来変わっても、古い形を見分けて捨てられるよう版番号を付ける */
-const MAP_SNAPSHOT_SCHEMA_VERSION = 6
+const MAP_SNAPSHOT_SCHEMA_VERSION = 7
 
 type MapSnapshotRecord = {
   schemaVersion: typeof MAP_SNAPSHOT_SCHEMA_VERSION
@@ -23,7 +23,8 @@ function wrapInMapSnapshotRecord(mapSnapshot: MapSnapshot): MapSnapshotRecord {
 }
 
 function unwrapMapSnapshotRecord(storedValue: unknown): MapSnapshot | null {
-  if (typeof storedValue !== 'object' || storedValue === null) return null
+  const isObject = typeof storedValue === 'object' && storedValue !== null
+  if (!isObject) return null
   const record = storedValue as Partial<MapSnapshotRecord>
   if (record.schemaVersion !== MAP_SNAPSHOT_SCHEMA_VERSION) return null
   return isMapSnapshot(record.mapSnapshot) ? record.mapSnapshot : null

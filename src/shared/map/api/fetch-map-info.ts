@@ -23,7 +23,7 @@ export const mapInfoQueryKey = (mapId: string) => ['map-info', mapId] as const
  * 本番では API から地図情報を取得する想定だが、API がまだないため、仮の保存先（ADR 0004）から読む。
  * API ができたら queryFn の中身を API の呼び出しに書き換える。
  * ルーターの loader（React の外）からも使えるよう、Repository を引数で受け取る。
- * カタログとの突き合わせを Repository ではなくここで行うのは、保存先の実装ごとに同じ処理を書かないため。
+ * カタログとの突き合わせを Repository ではなくここで行うのは、保存先の実装ごとに同じ突き合わせのコードを書かないため。
  */
 export const mapInfoQueryOptions = (
   repository: MapSnapshotRepository,
@@ -54,7 +54,7 @@ const pickLayers = (mapInfo: MapInfo) => mapInfo.layers
  * キャッシュは地図情報1つにまとめている。select でビューポートだけを取り出すのは、
  * このフックを使うコンポーネントが、レイヤー操作（キャッシュの layers の書き換え）で再描画されないようにするため。
  */
-export function useSavedViewport(mapId: string) {
+export function useSavedViewportState(mapId: string) {
   const repository = useMapSnapshotRepository()
   return useSuspenseQuery({
     ...mapInfoQueryOptions(repository, mapId),

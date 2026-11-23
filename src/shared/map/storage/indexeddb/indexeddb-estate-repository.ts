@@ -20,7 +20,8 @@ function wrapInEstateRecord(estate: Estate): EstateRecord {
 }
 
 function unwrapEstateRecord(storedValue: unknown): Estate | null {
-  if (typeof storedValue !== 'object' || storedValue === null) return null
+  const isObject = typeof storedValue === 'object' && storedValue !== null
+  if (!isObject) return null
   const record = storedValue as Partial<EstateRecord>
   if (record.schemaVersion !== ESTATE_SCHEMA_VERSION) return null
   return isEstate(record.estate) ? record.estate : null
