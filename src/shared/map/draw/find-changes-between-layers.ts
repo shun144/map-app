@@ -1,5 +1,5 @@
 import type { OverlayerAppearance } from '#/lib/map/types'
-import type { Layers } from '#/shared/map/types'
+import type { Layers } from '../types'
 
 export type ChangedOverlayer =
   | {

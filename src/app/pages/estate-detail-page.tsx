@@ -1,5 +1,7 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { ESTATE_LOCATION_ZOOM } from '#/config/estate'
+import { DEFAULT_MAP_ID } from '#/config/map'
+import { useLayersState } from '#/shared/map/api/fetch-map-info'
 import { useEstate } from '#/shared/map/api/fetch-estates'
 import { EstateLocationField } from '#/features/estate-location-map/components/estate-location-field'
 import { PageMapProvider } from '../providers/page-map-provider'
@@ -7,6 +9,7 @@ import { PageMapProvider } from '../providers/page-map-provider'
 export function EstateDetailPage() {
   const { estateId } = useParams({ from: '/estate/$estateId' })
   const estate = useEstate(estateId)
+  const layersState = useLayersState(DEFAULT_MAP_ID)
 
   if (!estate) {
     return (
@@ -31,7 +34,7 @@ export function EstateDetailPage() {
           </p>
         </div>
         <PageMapProvider>
-          <EstateLocationField lngLat={estate.lngLat} />
+          <EstateLocationField lngLat={estate.lngLat} layers={layersState} />
         </PageMapProvider>
         <div className="flex justify-end border-t border-slate-200 pt-4">
           {/* 物件の位置を中心に地図画面を開くのは、見ていた物件の場所に戻れるようにするため */}

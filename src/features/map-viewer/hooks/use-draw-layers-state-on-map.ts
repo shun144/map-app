@@ -2,9 +2,10 @@ import { useEffect } from 'react'
 import { hashKey, useQueryClient } from '@tanstack/react-query'
 import { useMapController } from '#/lib/map/map-provider'
 import { mapInfoQueryKey } from '#/shared/map/api/fetch-map-info'
-import { getBaseLayer } from '#/shared/map/catalog/base-layers'
-import { findOverlayerDefinition } from '#/shared/map/catalog/overlayer-catalog'
-import { findChangesBetweenLayers } from '../logic/find-changes-between-layers'
+import {
+  drawAllLayersOnMap,
+  drawChangedLayersOnMap,
+} from '#/shared/map/draw/draw-layers-on-map'
 import type { MapController } from '#/lib/map/map-controller'
 import type { MapInfo } from '#/shared/map/api/fetch-map-info'
 import type { Layers } from '#/shared/map/types'
@@ -72,54 +73,4 @@ function drawLayersOnMap(
     drawAllLayersOnMap(mapController, nextLayers)
   }
   return nextLayers
-}
-
-/**
- * 重なり順を指定しないのは、addOverlayer が追加したオーバーレイヤーを最上位に置くため。
- * 下から順に追加すれば、そのまま指定どおりの重なり順になる
- */
-function drawAllLayersOnMap(mapController: MapController, layers: Layers) {
-  mapController.setBaseLayer(getBaseLayer(layers.baseLayerId))
-  for (const overlayer of layers.overlayers) {
-    const overlayerDefinition = findOverlayerDefinition(overlayer.id)
-    if (!overlayerDefinition) continue
-    mapController.addOverlayer(overlayerDefinition, overlayer.appearance)
-  }
-}
-
-function drawChangedLayersOnMap(
-  mapController: MapController,
-  lastDrawnLayers: Layers,
-  nextLayers: Layers,
-) {
-  const layersChanges = findChangesBetweenLayers(lastDrawnLayers, nextLayers)
-
-  if (layersChanges.baseLayerId) {
-    mapController.setBaseLayer(getBaseLayer(layersChanges.baseLayerId))
-  }
-  for (const overlayerChange of layersChanges.changedOverlayers) {
-    switch (overlayerChange.type) {
-      case 'add': {
-        const overlayerDefinition = findOverlayerDefinition(overlayerChange.id)
-        if (!overlayerDefinition) break
-        mapController.addOverlayer(
-          overlayerDefinition,
-          overlayerChange.appearance,
-        )
-        break
-      }
-      case 'remove':
-        mapController.removeOverlayer(overlayerChange.id)
-        break
-      case 'update':
-        mapController.updateOverlayerAppearance(
-          overlayerChange.id,
-          overlayerChange.appearance,
-        )
-        break
-    }
-  }
-  if (layersChanges.overlayerOrder) {
-    mapController.setOverlayerOrder(layersChanges.overlayerOrder)
-  }
 }

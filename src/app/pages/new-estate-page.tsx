@@ -1,5 +1,7 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { ESTATE_LOCATION_ZOOM } from '#/config/estate'
+import { DEFAULT_MAP_ID } from '#/config/map'
+import { useLayersState } from '#/shared/map/api/fetch-map-info'
 import { NewEstateForm } from '#/features/estate-create/components/new-estate-form'
 import { findLngLatInSearch } from '../router/read-location-from-search'
 import { EstateLocationField } from '#/features/estate-location-map/components/estate-location-field'
@@ -8,6 +10,7 @@ import { PageMapProvider } from '../providers/page-map-provider'
 export function NewEstatePage() {
   const lngLat = findLngLatInSearch(useSearch({ from: '/estate/new' }))
   const navigate = useNavigate()
+  const layersState = useLayersState(DEFAULT_MAP_ID)
 
   if (!lngLat) {
     return (
@@ -43,7 +46,7 @@ export function NewEstatePage() {
         }
       >
         <PageMapProvider>
-          <EstateLocationField lngLat={lngLat} />
+          <EstateLocationField lngLat={lngLat} layers={layersState} />
         </PageMapProvider>
       </NewEstateForm>
     </>
