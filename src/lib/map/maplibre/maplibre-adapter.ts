@@ -7,7 +7,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { AddLayerObject, GeoJSONSource, MapMouseEvent } from 'maplibre-gl'
-import { LngLat } from '../lng-lat'
+import { LngLat } from '#/value-objects/lng-lat'
 import type { MapFactory, MapController } from '../map-controller'
 import type {
   BaseLayerDefinition,

@@ -64,7 +64,7 @@ if (!isMapInfoUpdated) return
 
 ## 型
 
-経度・緯度のように、ただの `number`・`string` では範囲外の値や取り違えを防げない値は、zod の `.brand()` で型を分ける（例: `src/lib/map/lng-lat.ts`）。plain object のまま state・保存先・URL に入れられるよう、クラスにはしない。
+経度・緯度のように、ただの `number`・`string` では範囲外の値や取り違えを防げない値は、zod の `.brand()` で型を分ける（例: `src/value-objects/lng-lat.ts`）。plain object のまま state・保存先・URL に入れられるよう、クラスにはしない。
 
 - スキーマと型は同じ名前で export し、モジュールの一番外で定義する
 - 値は `parse`・`safeParse` で作る。アプリの外から来る値（URL・保存先・地図ライブラリ）は必ず通す
@@ -84,7 +84,7 @@ if (!isMapInfoUpdated) return
 
 ## import と依存
 
-- 依存の向きは `lib` / `config` → `shared` → `features` → `app` の一方向（ESLint で検査）
+- 依存の向きは `value-objects` → `lib` / `config` → `shared` → `features` → `app` の一方向（ESLint で検査）。`value-objects` は値オブジェクト（brand で型を分けた値）を置く、いちばん下の層
 - features 同士は import しない（ESLint で検査）
 - `maplibre-gl` を import できるのは `src/lib/map/maplibre/` だけ（ESLint で検査）
 - バレルファイル（`index.ts` で re-export をまとめるファイル）を作らず、実体のファイルを直接 import する

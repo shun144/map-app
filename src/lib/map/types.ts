@@ -1,6 +1,6 @@
 /** MapLibre の型を features に漏らさないよう、MapController の引数・戻り値はここの型だけで表す（ADR 0002） */
 
-import type { LngLat } from './lng-lat'
+import type { LngLat } from '#/value-objects/lng-lat'
 
 export type Viewport = {
   center: LngLat

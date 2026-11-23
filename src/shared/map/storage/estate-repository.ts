@@ -1,4 +1,4 @@
-import { LngLat } from '#/lib/map/lng-lat'
+import { LngLat } from '#/value-objects/lng-lat'
 
 export type Estate = {
   id: string

@@ -1,5 +1,5 @@
-import { Latitude, Longitude } from '#/lib/map/lng-lat'
-import type { LngLat } from '#/lib/map/lng-lat'
+import { Latitude, Longitude } from '#/value-objects/lng-lat'
+import type { LngLat } from '#/value-objects/lng-lat'
 
 /*
  * URL のクエリは利用者が書き換えられるので、数値でない値や範囲外の値は「指定なし」として捨てる。

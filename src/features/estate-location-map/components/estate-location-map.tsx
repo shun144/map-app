@@ -5,7 +5,7 @@ import { ESTATE_LOCATION_ZOOM } from '#/config/estate'
 import { ESTATE_OVERLAYER_ID } from '#/shared/map/catalog/overlayer-catalog'
 import { drawAllLayersOnMap } from '#/shared/map/draw/draw-layers-on-map'
 import { updateLayersToShowEstateOnTop } from '../logic/update-layers-to-show-estate-on-top'
-import type { LngLat } from '#/lib/map/lng-lat'
+import type { LngLat } from '#/value-objects/lng-lat'
 import type { Layers } from '#/shared/map/types'
 
 type Props = {

@@ -7,7 +7,7 @@ import { tanstackConfig } from '@tanstack/eslint-config'
  *     そのため #/ 別名のパターンは regex で書く。
  *
  * 依存の向きを機械的に守らせるルール（README「依存ルール」参照）。
- *   lib / config → shared → features → app
+ *   value-objects → lib / config → shared → features → app
  * - features 同士は import しない。複数の feature が使うものは shared へ移し、組み合わせは app で行う
  * - バレルファイル（index.ts）は使わず、実体のファイルを直接 import する
  * - maplibre-gl を import できるのは lib/map/maplibre だけ（ADR 0002）
@@ -51,6 +51,16 @@ const noShared = {
   message: 'lib / config は shared に依存できません。',
 }
 
+const noLib = {
+  regex: '^(#/lib(/|$)|(\\.\\./)+lib/)',
+  message: 'value-objects はいちばん下の層です。lib に依存できません。',
+}
+
+const noConfig = {
+  regex: '^(#/config(/|$)|(\\.\\./)+config/)',
+  message: 'value-objects はいちばん下の層です。config に依存できません。',
+}
+
 const restrictImports = (files, patterns, ignores = []) => ({
   files,
   ignores,
@@ -85,6 +95,10 @@ export default [
     ['src/lib/**/*.{ts,tsx}', 'src/config/**/*.{ts,tsx}'],
     [maplibreOnlyInAdapter, noApp, noFeatures, noShared],
     ['src/lib/map/maplibre/**'],
+  ),
+  restrictImports(
+    ['src/value-objects/**/*.{ts,tsx}'],
+    [maplibreOnlyInAdapter, noApp, noFeatures, noShared, noLib, noConfig],
   ),
   // MapLibre アダプタは maplibre-gl を使ってよいが、lib 層としての依存の向きは守る
   restrictImports(

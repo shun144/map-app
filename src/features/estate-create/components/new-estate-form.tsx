@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ESTATE_NAME_MAX_LENGTH } from '#/config/estate'
 import { useCreateEstate } from '../api/create-estate'
 import type { FormEvent, ReactNode } from 'react'
-import type { LngLat } from '#/lib/map/lng-lat'
+import type { LngLat } from '#/value-objects/lng-lat'
 import type { Estate } from '#/shared/map/storage/estate-repository'
 
 type Props = {

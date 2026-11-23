@@ -1,4 +1,4 @@
-import { LngLat } from '#/lib/map/lng-lat'
+import { LngLat } from '#/value-objects/lng-lat'
 import type { Viewport } from '#/lib/map/types'
 import type { Layers } from '../types'
 

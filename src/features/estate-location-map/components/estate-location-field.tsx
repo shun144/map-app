@@ -1,5 +1,5 @@
 import { EstateLocationMap } from './estate-location-map'
-import type { LngLat } from '#/lib/map/lng-lat'
+import type { LngLat } from '#/value-objects/lng-lat'
 import type { Layers } from '#/shared/map/types'
 
 type Props = {
