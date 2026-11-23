@@ -1,3 +1,4 @@
+import { LngLat } from '#/lib/map/lng-lat'
 import type { Viewport } from '#/lib/map/types'
 import type { Layers } from '../types'
 
@@ -27,9 +28,7 @@ function isViewport(value: unknown): value is Viewport {
   return (
     isRecord(value) &&
     isFiniteNumber(value.zoom) &&
-    isRecord(value.center) &&
-    isFiniteNumber(value.center.lng) &&
-    isFiniteNumber(value.center.lat)
+    LngLat.safeParse(value.center).success
   )
 }
 

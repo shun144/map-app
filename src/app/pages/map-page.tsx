@@ -13,8 +13,8 @@ import { FeatureInfoPanel } from '#/features/feature-info/components/feature-inf
 import { useDrawEstatesOnMap } from '#/features/estate-layer/hooks/use-draw-estates-on-map'
 import { useOpenEstateDetailOnPointClick } from '#/features/estate-layer/hooks/use-open-estate-detail-on-point-click'
 import { MapContextMenu } from '#/features/map-context-menu/components/map-context-menu'
-import { findLngLatInSearch } from '../read-location-from-search'
-import { PageMapProvider } from './page-map-provider'
+import { findLngLatInSearch } from '../router/read-location-from-search'
+import { PageMapProvider } from '../providers/page-map-provider'
 
 export function MapPage() {
   return (

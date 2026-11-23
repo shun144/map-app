@@ -91,11 +91,27 @@ export default [
     ['src/lib/map/maplibre/**/*.{ts,tsx}'],
     [noApp, noFeatures, noShared],
   ),
+  // zod の brand で作った型は、as で書き換えると範囲の確認を飛ばせてしまうので、parse / safeParse で作らせる。
+  // brand で型を足したら、名前をここにも足す
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            ':matches(TSAsExpression, TSTypeAssertion) > TSTypeReference.typeAnnotation[typeName.name=/^(Longitude|Latitude|LngLat)$/]',
+          message:
+            'brand で作った型は as で作れません。スキーマの parse / safeParse で作ってください（docs/coding-conventions.md「型」）。',
+        },
+      ],
+    },
+  },
   {
     ignores: [
       'eslint.config.js',
       'prettier.config.js',
-      'src/app/routeTree.gen.ts',
+      'src/app/router/routeTree.gen.ts',
     ],
   },
 ]

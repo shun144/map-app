@@ -3,7 +3,7 @@ import { MapSnapshotRepositoryProvider } from '#/shared/map/storage/repository-c
 import { EstateRepositoryProvider } from '#/shared/map/storage/estate-repository-context'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { Repositories } from './repositories'
+import type { Repositories } from '../repositories/repositories'
 
 type Props = {
   queryClient: QueryClient

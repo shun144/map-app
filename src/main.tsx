@@ -1,9 +1,9 @@
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { createQueryClient } from '#/lib/query-client'
-import { AppProvider } from '#/app/provider'
-import { createRepositories } from '#/app/repositories'
-import { createAppRouter } from '#/app/router'
+import { AppProvider } from '#/app/providers/app-provider'
+import { createRepositories } from '#/app/repositories/repositories'
+import { createAppRouter } from '#/app/router/router'
 
 async function bootstrap() {
   const queryClient = createQueryClient()

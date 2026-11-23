@@ -1,4 +1,4 @@
-import type { LngLat } from '#/lib/map/types'
+import { LngLat } from '#/lib/map/lng-lat'
 
 export type Estate = {
   id: string
@@ -25,17 +25,12 @@ export interface EstateRepository {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-const isFiniteNumber = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value)
-
 /** 保存先から返る値はアプリの外から来たものなので、どの保存先でも型を信用せず中身を確かめる */
 export function isEstate(value: unknown): value is Estate {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
-    isRecord(value.lngLat) &&
-    isFiniteNumber(value.lngLat.lng) &&
-    isFiniteNumber(value.lngLat.lat)
+    LngLat.safeParse(value.lngLat).success
   )
 }

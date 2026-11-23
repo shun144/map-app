@@ -17,7 +17,7 @@ const config = defineConfig({
       // ルートは features を組み合わせる app 層の仕事なので app 配下に置く。
       // tsr.config.json も同じ値にしないと、CLI での生成先と食い違う
       routesDirectory: './src/app/routes',
-      generatedRouteTree: './src/app/routeTree.gen.ts',
+      generatedRouteTree: './src/app/router/routeTree.gen.ts',
     }),
     viteReact(),
   ],

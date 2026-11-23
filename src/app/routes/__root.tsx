@@ -2,7 +2,7 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
-import type { RouterContext } from '../router'
+import type { RouterContext } from '../router/router'
 
 import '../../styles.css'
 

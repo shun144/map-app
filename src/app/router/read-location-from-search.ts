@@ -1,4 +1,5 @@
-import type { LngLat } from '#/lib/map/types'
+import { Latitude, Longitude } from '#/lib/map/lng-lat'
+import type { LngLat } from '#/lib/map/lng-lat'
 
 /*
  * URL のクエリは利用者が書き換えられるので、数値でない値や範囲外の値は「指定なし」として捨てる。
@@ -15,8 +16,8 @@ function readNumberInRange(searchValue: unknown, min: number, max: number) {
 }
 
 export type LngLatSearch = {
-  lng?: number
-  lat?: number
+  lng?: Longitude
+  lat?: Latitude
 }
 
 export type ViewportSearch = LngLatSearch & {
@@ -27,8 +28,8 @@ export function readLngLatSearch(
   search: Record<string, unknown>,
 ): LngLatSearch {
   return {
-    lng: readNumberInRange(search.lng, -180, 180),
-    lat: readNumberInRange(search.lat, -90, 90),
+    lng: Longitude.safeParse(search.lng).data,
+    lat: Latitude.safeParse(search.lat).data,
   }
 }
 

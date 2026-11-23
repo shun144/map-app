@@ -3,7 +3,7 @@ import { DEFAULT_MAP_ID } from '#/config/map'
 import { mapInfoQueryOptions } from '#/shared/map/api/fetch-map-info'
 import { estatesQueryOptions } from '#/shared/map/api/fetch-estates'
 import { MapPage } from '../pages/map-page'
-import { readViewportSearch } from '../read-location-from-search'
+import { readViewportSearch } from '../router/read-location-from-search'
 
 export const Route = createFileRoute('/map')({
   // lng・lat・zoom は、物件の画面から戻るときに物件の位置で地図を開くために使う（指定がなければ保存したビューポート）

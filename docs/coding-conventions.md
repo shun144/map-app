@@ -225,6 +225,17 @@ lastDrawnLayers = nextLayers
 - 値が見つからないときに抜けるだけの確認（`if (!overlayerDefinition) continue`）は否定形でよい。肯定形にすると本来の処理が `if` の中に入り、早期 return の規約に反するため
 - 条件を定数に入れるときも、定数名は肯定形にする（`isSavable` であって `isNotSavable` ではない）
 
+## 型
+
+### 範囲や意味が決まった値は、zod の brand で型を分ける
+
+経度・緯度のように、ただの `number` や `string` では範囲外の値や取り違えを防げない値は、zod のスキーマに `.brand()` を付けて型を分ける（例: `src/lib/map/lng-lat.ts`）。クラスにしないのは、React の state・保存先・URL にそのまま入れられる plain object のままにしたいため。
+
+- スキーマと型は同じ名前で export し、値としても型としても使う（`export const LngLat = ...` と `export type LngLat = z.infer<typeof LngLat>`）
+- スキーマはモジュールの一番外で定義する
+- 値は `parse`（失敗したら例外）か `safeParse`（失敗しうる入力）で作る。アプリの外から来る値（URL・保存先・地図ライブラリ）は必ずここを通す
+- `as Longitude` のような型の書き換えで作らない。範囲の確認を飛ばせてしまうため。ESLint で検査しているので、brand で型を足したら `eslint.config.js` の型名の一覧にも足す
+
 ## コメント
 
 ### 書くのは「なぜ」だけ

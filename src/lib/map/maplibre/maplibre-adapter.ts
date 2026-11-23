@@ -7,6 +7,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { AddLayerObject, GeoJSONSource, MapMouseEvent } from 'maplibre-gl'
+import { LngLat } from '../lng-lat'
 import type { MapFactory, MapController } from '../map-controller'
 import type {
   BaseLayerDefinition,
@@ -175,8 +176,12 @@ export const createMapLibreMap: MapFactory = (
   }
 
   const readViewportFromMap = (): Viewport => {
-    const center = map.getCenter()
-    return { center: { lng: center.lng, lat: center.lat }, zoom: map.getZoom() }
+    // 地図を東西に何周も動かすと経度が -180〜180 の外に出るので、wrap で範囲内に戻してから LngLat にする
+    const center = map.getCenter().wrap()
+    return {
+      center: LngLat.parse({ lng: center.lng, lat: center.lat }),
+      zoom: map.getZoom(),
+    }
   }
 
   const listClickableStyleLayerIds = () =>
@@ -344,8 +349,12 @@ export const createMapLibreMap: MapFactory = (
     subscribeToRightClick: (listener) => {
       const notifyRightClick = (event: MapMouseEvent) => {
         event.originalEvent.preventDefault()
+        const wrappedLngLat = event.lngLat.wrap()
         listener({
-          lngLat: { lng: event.lngLat.lng, lat: event.lngLat.lat },
+          lngLat: LngLat.parse({
+            lng: wrappedLngLat.lng,
+            lat: wrappedLngLat.lat,
+          }),
           pointInMap: { x: event.point.x, y: event.point.y },
         })
       }

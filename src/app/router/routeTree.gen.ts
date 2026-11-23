@@ -8,15 +8,21 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as MapRouteImport } from './routes/map'
-import { Route as EstateEstateIdRouteImport } from './routes/estate/$estateId'
-import { Route as EstateNewRouteImport } from './routes/estate/new'
+import { Route as rootRouteImport } from './../routes/__root'
+import { Route as IndexRouteImport } from './../routes/index'
+import { Route as EstateRouteRouteImport } from './../routes/estate/route'
+import { Route as MapRouteImport } from './../routes/map'
+import { Route as EstateEstateIdRouteImport } from './../routes/estate/$estateId'
+import { Route as EstateNewRouteImport } from './../routes/estate/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstateRouteRoute = EstateRouteRouteImport.update({
+  id: '/estate',
+  path: '/estate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -25,24 +31,26 @@ const MapRoute = MapRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstateEstateIdRoute = EstateEstateIdRouteImport.update({
-  id: '/estate/$estateId',
-  path: '/estate/$estateId',
-  getParentRoute: () => rootRouteImport,
+  id: '/$estateId',
+  path: '/$estateId',
+  getParentRoute: () => EstateRouteRoute,
 } as any)
 const EstateNewRoute = EstateNewRouteImport.update({
-  id: '/estate/new',
-  path: '/estate/new',
-  getParentRoute: () => rootRouteImport,
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => EstateRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/estate': typeof EstateRouteRouteWithChildren
   '/map': typeof MapRoute
   '/estate/$estateId': typeof EstateEstateIdRoute
   '/estate/new': typeof EstateNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/estate': typeof EstateRouteRouteWithChildren
   '/map': typeof MapRoute
   '/estate/$estateId': typeof EstateEstateIdRoute
   '/estate/new': typeof EstateNewRoute
@@ -50,23 +58,24 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/estate': typeof EstateRouteRouteWithChildren
   '/map': typeof MapRoute
   '/estate/$estateId': typeof EstateEstateIdRoute
   '/estate/new': typeof EstateNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/estate/$estateId' | '/estate/new'
+  fullPaths: '/' | '/estate' | '/map' | '/estate/$estateId' | '/estate/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/estate/$estateId' | '/estate/new'
-  id: '__root__' | '/' | '/map' | '/estate/$estateId' | '/estate/new'
+  to: '/' | '/estate' | '/map' | '/estate/$estateId' | '/estate/new'
+  id:
+    '__root__' | '/' | '/estate' | '/map' | '/estate/$estateId' | '/estate/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EstateRouteRoute: typeof EstateRouteRouteWithChildren
   MapRoute: typeof MapRoute
-  EstateEstateIdRoute: typeof EstateEstateIdRoute
-  EstateNewRoute: typeof EstateNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -78,6 +87,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/estate': {
+      id: '/estate'
+      path: '/estate'
+      fullPath: '/estate'
+      preLoaderRoute: typeof EstateRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/map': {
       id: '/map'
       path: '/map'
@@ -87,26 +103,39 @@ declare module '@tanstack/react-router' {
     }
     '/estate/$estateId': {
       id: '/estate/$estateId'
-      path: '/estate/$estateId'
+      path: '/$estateId'
       fullPath: '/estate/$estateId'
       preLoaderRoute: typeof EstateEstateIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof EstateRouteRoute
     }
     '/estate/new': {
       id: '/estate/new'
-      path: '/estate/new'
+      path: '/new'
       fullPath: '/estate/new'
       preLoaderRoute: typeof EstateNewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof EstateRouteRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  MapRoute: MapRoute,
+interface EstateRouteRouteChildren {
+  EstateEstateIdRoute: typeof EstateEstateIdRoute
+  EstateNewRoute: typeof EstateNewRoute
+}
+
+const EstateRouteRouteChildren: EstateRouteRouteChildren = {
   EstateEstateIdRoute: EstateEstateIdRoute,
   EstateNewRoute: EstateNewRoute,
+}
+
+const EstateRouteRouteWithChildren = EstateRouteRoute._addFileChildren(
+  EstateRouteRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  EstateRouteRoute: EstateRouteRouteWithChildren,
+  MapRoute: MapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

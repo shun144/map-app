@@ -10,7 +10,7 @@ import {
   ESTATE_OVERLAYER_ID,
   findOverlayerDefinition,
 } from '#/shared/map/catalog/overlayer-catalog'
-import type { LngLat } from '#/lib/map/types'
+import type { LngLat } from '#/lib/map/lng-lat'
 
 type Props = {
   lngLat: LngLat

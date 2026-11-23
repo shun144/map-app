@@ -1,7 +1,7 @@
 import { createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import type { QueryClient } from '@tanstack/react-query'
-import type { Repositories } from './repositories'
+import type { Repositories } from '../repositories/repositories'
 
 /** loader は React の外で動き Context を読めないため、必要な値をルーターの context で渡す */
 export type RouterContext = {
