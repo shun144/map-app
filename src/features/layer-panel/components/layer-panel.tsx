@@ -13,7 +13,6 @@ import type { ReactNode } from 'react'
 
 type Props = {
   mapId: string
-  /** 保存ボタンなど、ほかの feature の部品を差し込む枠。パネルが他の feature を import しないため */
   children?: ReactNode
 }
 
