@@ -206,8 +206,19 @@ export const createMapLibreMap: MapFactory = (
     }
   }
 
+  /**
+   * 地物のクリックを購読している関数の数。
+   * カーソルを指の形にするのは購読している関数があるときだけにする。
+   * 購読がない地図（物件の位置の地図など）では、地物をクリックしても何も起きないため
+   */
+  let featureClickListenerCount = 0
+
   // クリックできる場所だと分かるように、地物の上ではカーソルを変える
   map.on('mousemove', (event) => {
+    if (featureClickListenerCount === 0) {
+      map.getCanvas().style.cursor = ''
+      return
+    }
     map.getCanvas().style.cursor = findFeatureUnderPointer(event)
       ? 'pointer'
       : ''
@@ -343,7 +354,11 @@ export const createMapLibreMap: MapFactory = (
       const notifyFeatureClick = (event: MapMouseEvent) =>
         listener(findFeatureUnderPointer(event))
       map.on('click', notifyFeatureClick)
-      return () => map.off('click', notifyFeatureClick)
+      featureClickListenerCount += 1
+      return () => {
+        map.off('click', notifyFeatureClick)
+        featureClickListenerCount -= 1
+      }
     },
 
     subscribeToRightClick: (listener) => {

@@ -41,7 +41,10 @@ export interface MapController {
     points: ReadonlyArray<MapPoint>,
   ) => void
 
-  /** 地物のクリック。何もない場所をクリックしたときは null */
+  /**
+   * 地物のクリック。何もない場所をクリックしたときは null。
+   * 購読している間だけ、地物の上でカーソルを指の形にする（クリックできることを利用者に見せるため）
+   */
   subscribeToFeatureClick: (
     listener: (feature: MapFeature | null) => void,
   ) => Unsubscribe
