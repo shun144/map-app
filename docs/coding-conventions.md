@@ -1,297 +1,98 @@
 # コーディング規約
 
-このプロジェクトでコードを書くときのルール。設計判断の理由は [docs/adr/](./adr/)、用語は [GLOSSARY.md](../GLOSSARY.md) を参照。
+設計判断の理由は [docs/adr/](./adr/)、用語は [GLOSSARY.md](../GLOSSARY.md) を参照。
 
 ## feature の分け方
 
-### 互いに直接依存する必要がない機能は、別の feature に分ける
-
-同じ画面に並ぶ、同じ地図を使う、といった理由だけでは同じ feature にしない。判断の基準は「片方の仕事が、もう片方のコードを使わずに成り立つか」。成り立つなら別の feature にする。
-
-| 例                                                                  | 判断     | 理由                                                                           |
-| ------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
-| map-viewer（表示状態の保存・復元）と feature-info（地物の情報表示） | 分ける   | 地物の情報表示は、ビューポートやレイヤー構成の保存・復元を使わずに成り立つ     |
-| map-viewer と reset-view（保存した位置に戻る）                      | 分ける   | キャッシュのビューポートへ地図を動かすだけで、保存もレイヤーも使わない         |
-| map-viewer（地図への反映）と layer-panel（レイヤーパネル）          | 分ける   | どちらも shared/map のレイヤー構成を読み書きするだけで、互いのコードを使わない |
-| ビューポートとレイヤー構成                                          | 分けない | 保存ボタンで両方を1つのレコードとして保存するため、片方だけでは成り立たない    |
-
-- 2つの機能が同じものを使うときは、それを下の層に置き、両方がそこに依存する形にする。feature 同士を import でつながない
-
-  | 置くもの                                | 置き場所 | 例                               |
-  | --------------------------------------- | -------- | -------------------------------- |
-  | ライブラリを包む部品                    | `lib`    | MapController・MapLibre アダプタ |
-  | アプリ全体の設定                        | `config` | 地図 ID・初期ビューポート        |
-  | 複数の feature が使う業務の状態・データ | `shared` | レイヤー構成・カタログ・保存先   |
-
-- 2つの機能を組み合わせるのは `app/pages`（画面）の仕事にする。ある feature の部品を別の feature の UI の中に置きたいときは、受け取る側が `children` などの枠を用意し、画面が差し込む（例: レイヤーパネルの中の保存ボタン）
-- 分けたあとに片方を消しても、もう片方がそのまま動くことを確認の目安にする
+- 片方の仕事が、もう片方のコードを使わずに成り立つなら別の feature にする。同じ画面に並ぶ・同じ地図を使うだけでは同じ feature にしない（例: map-viewer と feature-info は分ける。保存ボタンで1レコードにするビューポートとレイヤー構成は分けない）
+- 2つの feature が同じものを使うときは下の層に置く（ライブラリを包む部品は `lib`、アプリ全体の設定は `config`、複数の feature が使う状態・データは `shared`）
+- feature 同士の組み合わせは `app/pages`（画面）で行う。ほかの feature の部品を UI に入れたいときは、受け取る側が `children` などの枠を用意し、画面が差し込む
+- 片方を消しても、もう片方がそのまま動くことを確認の目安にする
 
 ## 責務
 
-### 1つの関数・フックは、名前が表す仕事だけをする
-
-名前に書いていない仕事（前提条件の確認、値の組み立て、別のデータの取得）を中に持ち込まない。それらは呼び出す側の責務にする。
+1つの関数・フックは、名前が表す仕事だけをする。前提条件の確認・値の組み立て・別のデータの取得は呼び出す側に任せ、必要な値は引数で受け取る。前提が満たされないときの扱いは UI で決める（例: 地図ができるまで保存ボタンを押せなくする）。
 
 ```ts
-// NG: 「保存する」フックが、地図の有無の確認と保存する値の組み立てまでしている
+// NG: 保存するフックが、地図の有無の確認と値の組み立てまでしている
 mutationFn: async () => {
   if (!mapController) throw new Error('地図がない')
-  const viewport = mapController.getViewport()
-  await repository.save(mapId, { viewport, layers: layersState })
+  await repository.save(mapId, {
+    viewport: mapController.getViewport(),
+    layers: layersState,
+  })
 }
-
-// OK: 保存するフックは、渡された値を保存するだけ
+// OK: 渡された値を保存するだけ
 mutationFn: (mapSnapshot: MapSnapshot) => repository.save(mapId, mapSnapshot)
 ```
 
-- 必要な値は引数で受け取る。フックの中で取りに行かない
-- 前提が満たされないときの扱いは、利用者に見える場所（UI）で決める。例: 地図ができるまで保存ボタンを押せなくする（`src/features/map-viewer/components/save-map-snapshot-button.tsx`）
-
 ## 命名
 
-### 汎用的な名前を付けない
+名前だけを読んで、何をするか・何を表すか（引数・戻り値・キャッシュや地図や保存先のどれが変わるか）が分かるようにする。長くてよい。
 
-`state`・`data`・`value`・`controller`・`next`・`s` のような、何を指すか読み手が推測しないといけない名前は使わない。
+- 汎用的な語だけの名前にしない（`state`・`data`・`value`・`controller`・`handler`・`select`・`apply`・`sync`・`diff`・`s` など）。対象を表す語と組み合わせて意味が特定できればよい（`layersState`・`mapController`・`handleFeatureClick`・`findChangesBetweenLayers`）
+- 関数名は「動詞＋対象」。動詞は処理ごとにそろえる
 
-| NG           | OK                      |
-| ------------ | ----------------------- |
-| `state`      | `layersState`           |
-| `controller` | `mapController`         |
-| `entry`      | `overlayerCatalogEntry` |
-| `definition` | `overlayerDefinition`   |
-| `diff`       | `layersChanges`         |
-| `applied`    | `lastDrawnLayers`       |
-| `(s) => ...` | `(current) => ...`      |
+  | 処理                                                             | 動詞                         | 例                                                     |
+  | ---------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------ |
+  | 非破壊的更新（元の値を書き換えず、新しい値を返す）               | `update〜`                   | `updateOverlayerOpacity(layers, overlayerId, opacity)` |
+  | TanStack Query のキャッシュを書き換える                          | `write〜ToCache`             | `writeLayersStateToCache`                              |
+  | 地図に描く・地図を動かす                                         | `draw〜OnMap`・`moveMapTo〜` | `drawAllLayersOnMap`、`useMoveMapToViewport`           |
+  | 保存先に保存する                                                 | `save〜`                     | `saveCurrentMapSnapshot`                               |
+  | 実在するもの（地図・ストア）の値を変える                         | `set〜`・`add〜`・`remove〜` | `mapController.setBaseLayer`                           |
+  | 必ずある値を取り出す                                             | `get〜`                      | `getBaseLayer`                                         |
+  | 見つからないことがある値を探す（`undefined`・`null` を返しうる） | `find〜`                     | `findOverlayerDefinition`                              |
 
-### 名前は長くてもよいので、役割と処理内容が分かるものにする
+- 複数のものをまとめた値は、修飾語も複数形にする（`Layers`、`layersState`）。単数形は1つ分を表すもの（`OverlayerAppearance`）と取り違えるため
+- `State` は、Zustand・TanStack Query が管理する状態を入れる変数と、それを読み書きするフック・関数にだけ使う（`layersState`、`useLayersState`）。型・保存データ・純粋関数の引数には使わず、渡すときは受け取る側の名前にする（`{ layers: layersState }`）
+- 同じものはどこでも同じ名前で呼ぶ。途中で別名に付け替えない（`setMapController` を `registerController` として渡さない）。コメントでも、同じ操作は同じ言葉で書く
+- コンポーネントの props の型は `Props`
+- 保存データのプロパティ名を変えるときは、保存先の版番号を上げる（ADR 0004）
 
-名前の短さより、名前だけを読んで「何をするか」「何を表すか」が分かることを優先する。本体を読まないと処理内容が分からない名前は付けない。曖昧な名前は読み手の誤解を生み、誤解した前提で設計の議論が進んでしまうため。
+## 条件分岐
 
-- 関数名は「動詞＋対象」で書き、動詞は実際に起きることを具体的に表すものを選ぶ。どこに書くか・何を作るかまで名前に入れてよい
-- 確認の目安：名前だけを見て、引数と戻り値と副作用（キャッシュ・地図・保存先のどれが変わるか）を言い当てられるか。言い当てられないなら名前を変える
-
-次の動詞は、何が起きるかを特定できないので使わない。
-
-| 使わない動詞              | 理由                                             | このプロジェクトでの言い換え                              |
-| ------------------------- | ------------------------------------------------ | --------------------------------------------------------- |
-| `select`                  | 利用者の行為なのか、値の読み出しなのか分からない | `updateBaseLayer`、`setSelectedFeature`                   |
-| `apply`                   | 何に何を当てはめるのか分からない                 | `writeChangedLayersStateToCache`                          |
-| `update`（対象なし）      | 何を書き換えるのか分からない                     | `updateOverlayerAppearance`、`writeLayersStateToCache`    |
-| `sync`                    | どちらからどちらへ、何をするのか分からない       | `useDrawLayersStateOnMap`                                 |
-| `reconcile`・`diff`       | 結果として何を返すのか分からない                 | `createLayersMatchingCatalog`、`findChangesBetweenLayers` |
-| `toggle`（対象なし）      | 何を切り替えるのか分からない                     | `switchBetweenOpenAndClosed`                              |
-| `handle`・`process`・`do` | 何をするのかを何も表していない                   | 実際の処理を表す動詞にする                                |
-
-書き込み先ごとに動詞をそろえる。非破壊的更新とは、元のオブジェクトを書き換えず、更新した結果を新しいオブジェクトとして返すこと。`copy`（複製が目的に読める）や `create`（無から作るように読める）は使わない。名前だけでは非破壊的更新だと分からないので、そのことはファイル冒頭のコメントに書く。
-
-| 処理                                         | 名前の形                                                     | 例                                                     |
-| -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
-| 新しいオブジェクトとして非破壊的更新をする   | `update〜`（元の値を引数で受け取り、新しい値を戻り値で返す） | `updateOverlayerOpacity(layers, overlayerId, opacity)` |
-| TanStack Query のキャッシュを書き換える      | `write〜ToCache`                                             | `writeLayersStateToCache`                              |
-| 地図に描く・地図を動かす                     | `draw〜OnMap`・`moveMapTo〜`                                 | `useDrawLayersStateOnMap`、`useMoveMapToViewport`      |
-| 保存先に保存する                             | `save〜`                                                     | `saveCurrentMapSnapshot`                               |
-| 実在するもの（地図・ストア）の値を書き換える | `set〜`・`add〜`・`remove〜`                                 | `mapController.setBaseLayer`、`setSelectedFeature`     |
-
-値を読み出す関数は、必ず値が返るかどうかで `get` と `find` を使い分ける。名前だけで、戻り値が `undefined`・`null` になりうるかを読み手が判断できるようにするため。
-
-| 動詞   | 使うとき                                                                | 例                                              |
-| ------ | ----------------------------------------------------------------------- | ----------------------------------------------- |
-| `get`  | 必ずあるものを取り出す。手元にある値をそのまま返すことが多い            | `mapController.getViewport()`、`getBaseLayer`   |
-| `find` | 探す。見つからない可能性があり、戻り値が `undefined`・`null` になりうる | `findOverlayerDefinition`、`findLngLatInSearch` |
-
-### 複数のものをまとめた値は、名前でも複数だと分かるようにする
-
-修飾する語を単数形にする英語の慣習（`layer state`、`user list`）より、読み手が誤読しないことを優先する。単数形の修飾語だと「1つ分の状態」と読めてしまい、1つ分を表す別の型（例: `OverlayerAppearance`）と取り違えやすい。
-
-| NG           | OK            | 中身                                                   |
-| ------------ | ------------- | ------------------------------------------------------ |
-| `Layer`      | `Layers`      | ベースレイヤーの選択と、全オーバーレイヤーの設定（型） |
-| `layerState` | `layersState` | キャッシュにある、そのレイヤー構成（状態の変数）       |
-
-- 1つ分を表すものは単数形のままにする（例: `OverlayerAppearance`、`overlayerDefinition`）
-- 保存データのプロパティ名も同じ規則に従う。保存データのプロパティ名を変えるときは、保存先の版番号を上げる（ADR 0004）
-
-### `State` は、Zustand か TanStack Query が管理する状態の変数名にだけ使う
-
-`State` という語は「アプリが管理していて、時間とともに変わる値」を指す。ただの型・interface・関数の引数・保存データに使うと、それが管理された状態なのか、ただの値なのか区別がつかなくなる。
-
-| 使ってよい                                                                   | 例                                                                     |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Zustand のストアや TanStack Query のキャッシュから取り出した値を入れる変数   | `const layersState = useLayersState(mapId)`                            |
-| その状態を読み書きするフック・関数（名前が指しているのが状態そのもののとき） | `useLayersState`、`writeLayersStateToCache`、`useDrawLayersStateOnMap` |
-
-| 使わない                   | NG                                    | OK                                     |
-| -------------------------- | ------------------------------------- | -------------------------------------- |
-| 型・interface              | `LayersState`                         | `Layers`                               |
-| 保存データの型・リポジトリ | `SavedMapState`、`MapStateRepository` | `MapSnapshot`、`MapSnapshotRepository` |
-| 純粋関数の引数・戻り値     | `(layersState: LayersState)`          | `(layers: Layers)`                     |
-| 保存データのプロパティ     | `{ viewport, layersState }`           | `{ viewport, layers }`                 |
-
-- 状態の変数を、状態ではない場所（保存データ・純粋関数の引数）へ渡すときは、受け取る側の名前で渡す（例: `{ layers: layersState }`）
-
-### 名前を付け替えない
-
-受け取った値を、途中で別の名前に変えて渡し直さない。同じものはどこでも同じ名前で呼ぶ。
+- `&&`・`||` で複数の比較をつなぐ条件は、`is`・`has` で始まる肯定形の名前の定数に入れてから使う
+- 条件を満たさないときは `return`・`continue`・`break` で先に抜け、本来の処理を `if` の中に入れない。`else if` を重ねない（JSX の中の条件付き表示は除く）
+- 条件は肯定形を優先する。どちらの場合にも処理があるときは肯定形の側を `if` に書く。値が見つからないときに抜けるだけの確認（`if (!overlayerDefinition) continue`）は否定形でよい
 
 ```ts
-// NG: setter を registerController という別名で Context に載せる
-const [controller, setController] = useState(...)
-const value = { controller, registerController: setController }
-
-// OK: useState の名前のまま載せる
-const [mapController, setMapController] = useState(...)
-const value = { mapController, setMapController }
-```
-
-### 同じ操作には同じ言葉を使う
-
-コメントやドキュメントで、同じ操作を別の言葉で書かない。例: キャッシュの値を `setQueryData` で置き換える操作は「キャッシュを書き換える」に統一し、「写す」「反映する」と混在させない。
-
-### コンポーネントの props の型は `Props`
-
-型はファイルの中だけで使うので、コンポーネント名を繰り返さない。
-
-### 長い条件は、意味が分かる名前の定数に入れてから使う
-
-`&&` や `||` で複数の比較をつなぐ条件は、`if` に直接書かず、何を判定しているかが分かる名前の定数に入れる。読み手が比較を1つずつ読んで意味を組み立てなくても、名前だけで判定の内容が分かるようにするため。
-
-```ts
-// NG: 比較を全部読まないと、何を判定しているか分からない
-if (
-  queryCacheEvent.type !== 'updated' ||
-  queryCacheEvent.query.queryHash !== hashKey(mapInfoQueryKey(mapId))
-) {
-  return
-}
-
-// OK: 名前で「地図情報が更新されたか」を判定していると分かる
 const isMapInfoUpdated =
   queryCacheEvent.type === 'updated' &&
   queryCacheEvent.query.queryHash === hashKey(mapInfoQueryKey(mapId))
 if (!isMapInfoUpdated) return
 ```
 
-- 定数の名前は `is`・`has` などで始め、条件が成り立つときの意味を肯定形で表す
-
-### 条件を満たさないときは早期 return で抜け、本来の処理を `if` の中に入れない
-
-関数は `return`、ループは `continue`、`switch` の `case` は `break` で先に抜け、本来の処理はネストさせずに書く。`if` のブロックや `else` が重なると、どの条件のときに何が起きるかを、読み手がネストをたどって組み立てないといけなくなるため。
-
-```ts
-// NG: 本来の処理（addOverlayer）が if の中に入っている
-for (const overlayer of layers.overlayers) {
-  const overlayerDefinition = findOverlayerDefinition(overlayer.id)
-  if (overlayerDefinition) {
-    mapController.addOverlayer(overlayerDefinition, overlayer.appearance)
-  }
-}
-
-// OK: 定義が見つからないときは先に抜け、本来の処理をネストさせない
-for (const overlayer of layers.overlayers) {
-  const overlayerDefinition = findOverlayerDefinition(overlayer.id)
-  if (!overlayerDefinition) continue
-  mapController.addOverlayer(overlayerDefinition, overlayer.appearance)
-}
-```
-
-- `else if` を続けるより、場合ごとに処理して `return` / `continue` で抜ける
-- JSX の中の条件付き表示（`{isOpen && ...}` や三項演算子）は対象にしない
-
-### 条件は肯定形を優先して書く
-
-`if` の条件は、`!` を付けた否定形より、肯定形で書けるなら肯定形にする。否定形は「〜でないとき」を読み手が頭の中で反転させないといけず、誤読を招きやすいため。
-
-```ts
-// NG: 「前回描いた構成がないとき」を先に書いている
-if (!lastDrawnLayers) {
-  drawAllLayersOnMap(mapController, nextLayers)
-  lastDrawnLayers = nextLayers
-  return
-}
-drawChangedLayersOnMap(mapController, lastDrawnLayers, nextLayers)
-lastDrawnLayers = nextLayers
-
-// OK: 「前回描いた構成があるとき」を先に書く
-if (lastDrawnLayers) {
-  drawChangedLayersOnMap(mapController, lastDrawnLayers, nextLayers)
-  lastDrawnLayers = nextLayers
-  return
-}
-drawAllLayersOnMap(mapController, nextLayers)
-lastDrawnLayers = nextLayers
-```
-
-- どちらの場合も処理があるときは、肯定形の条件の側を `if` に書く
-- 値が見つからないときに抜けるだけの確認（`if (!overlayerDefinition) continue`）は否定形でよい。肯定形にすると本来の処理が `if` の中に入り、早期 return の規約に反するため
-- 条件を定数に入れるときも、定数名は肯定形にする（`isSavable` であって `isNotSavable` ではない）
-
 ## 型
 
-### 範囲や意味が決まった値は、zod の brand で型を分ける
+経度・緯度のように、ただの `number`・`string` では範囲外の値や取り違えを防げない値は、zod の `.brand()` で型を分ける（例: `src/lib/map/lng-lat.ts`）。plain object のまま state・保存先・URL に入れられるよう、クラスにはしない。
 
-経度・緯度のように、ただの `number` や `string` では範囲外の値や取り違えを防げない値は、zod のスキーマに `.brand()` を付けて型を分ける（例: `src/lib/map/lng-lat.ts`）。クラスにしないのは、React の state・保存先・URL にそのまま入れられる plain object のままにしたいため。
-
-- スキーマと型は同じ名前で export し、値としても型としても使う（`export const LngLat = ...` と `export type LngLat = z.infer<typeof LngLat>`）
-- スキーマはモジュールの一番外で定義する
-- 値は `parse`（失敗したら例外）か `safeParse`（失敗しうる入力）で作る。アプリの外から来る値（URL・保存先・地図ライブラリ）は必ずここを通す
-- `as Longitude` のような型の書き換えで作らない。範囲の確認を飛ばせてしまうため。ESLint で検査しているので、brand で型を足したら `eslint.config.js` の型名の一覧にも足す
+- スキーマと型は同じ名前で export し、モジュールの一番外で定義する
+- 値は `parse`・`safeParse` で作る。アプリの外から来る値（URL・保存先・地図ライブラリ）は必ず通す
+- `as` で brand の型に書き換えない（ESLint で検査。brand の型を足したら `eslint.config.js` の型名の一覧にも足す）
 
 ## コメント
 
-### 書くのは「なぜ」だけ
-
-コードを読めば分かる「何をしているか」は書かない。書くのは、コードからは読み取れない理由・捨てた代替案・守っている制約・壊すと何が起きるか。理由がなければコメント自体を書かない。
-
-```ts
-// NG: コードの言い換え
-// 同じ Repository を React（Provider）とルーター（loader）の両方に渡す
-
-// OK: なぜそうしたか
-// loader は React の外で動き Context を読めないため、ルーター経由でも渡す。
-// 同じインスタンスにするのは、loader が読む保存先と mutation が書く保存先を食い違わせないため
-```
-
-型だけでは伝わらない約束事（`null` の意味、配列の並び順、値の範囲）は書いてよい。
-
-### 主語・述語・目的語を明記する
-
-コメントの文では、「何が」「何を」「どうする」を省略しない。省略すると、読み手が対象を推測しないといけなくなる。
+- 書くのは「なぜ」だけ（コードから読み取れない理由・捨てた代替案・守っている制約・壊すと何が起きるか）。コードの言い換えは書かない。型で伝わらない約束事（`null` の意味、配列の並び順、値の範囲）は書いてよい
+- 主語・述語・目的語を省かない
+- 「合わせる」「処理する」「対応する」「反映する」「整える」のような抽象的な言葉を使わず、何をどこからどこへどう変えるかを書く
 
 ```ts
-// NG: 保存できたときだけ、何を何に合わせるのかが書かれていない
-// キャッシュのビューポートは「保存した値」を表すので、保存できたときだけ合わせる
-
-// OK: 主語・述語・目的語がそろっている
-// キャッシュのビューポート（['viewport', mapId]）は、最後に保存したビューポートを表す。
-// そのため、保存先への保存が成功したときだけ、キャッシュのビューポートを保存したビューポートで書き換える
-```
-
-### 抽象的な言葉を使わない
-
-「合わせる」「処理する」「対応する」「反映する」「整える」のような、具体的に何が起きるのかが分からない言葉は使わない。値をどこからどこへ、どう変えるのかを書く。
-
-```ts
-// NG: 「合わせる」では、何をどう変えるのかが分からない
-// 保存できたときだけ合わせる
-
-// OK: 何をどう変えるのかを書く
-// 保存できたときだけ、キャッシュのビューポートを保存したビューポートで書き換える
+// NG: キャッシュのビューポートは「保存した値」を表すので、保存できたときだけ合わせる
+// OK: キャッシュのビューポートは、最後に保存したビューポートを表す。
+//     そのため、保存先への保存が成功したときだけ、キャッシュのビューポートを保存したビューポートで書き換える
 ```
 
 ## import と依存
 
-| ルール                                                                                                   | 検査     |
-| -------------------------------------------------------------------------------------------------------- | -------- |
-| 依存の向きは `lib` / `config` → `shared` → `features` → `app` の一方向                                   | ESLint   |
-| features 同士は import しない                                                                            | ESLint   |
-| `maplibre-gl` を import できるのは `src/lib/map/maplibre/` だけ                                          | ESLint   |
-| バレルファイル（`index.ts` で re-export をまとめるファイル）を作らない。実体のファイルを直接 import する | レビュー |
-
-`npm run lint` で検査できるものは、lint が通ることを確認してからコミットする。
+- 依存の向きは `lib` / `config` → `shared` → `features` → `app` の一方向（ESLint で検査）
+- features 同士は import しない（ESLint で検査）
+- `maplibre-gl` を import できるのは `src/lib/map/maplibre/` だけ（ESLint で検査）
+- バレルファイル（`index.ts` で re-export をまとめるファイル）を作らず、実体のファイルを直接 import する
+- lint が通ることを確認してからコミットする
 
 ## テスト
 
-現在はテストコードを置いていない（2026-11-22 時点）。設計と命名を変えるたびにテストを書き直すコストを避けるため。修正のたびにテストを書き足したり書き直したりしない。テストを再開するときは次に従う。
+現在はテストコードを置いていない（2026-11-22 時点）。設計と命名を変えるたびに書き直すコストを避けるため、修正のたびにテストを書き足さない。再開するときは次に従う。
 
-- Testing Library で描画するテストには `afterEach(cleanup)` を書く。Vitest のグローバル関数を有効にしていないため、自動の後片付けが働かない
-- TanStack Query のキャッシュ変更の通知は `setTimeout(0)` で遅れて届く。キャッシュを変えた直後の再描画を確かめるときは `waitFor` で待つ
+- Testing Library で描画するテストには `afterEach(cleanup)` を書く（Vitest のグローバル関数を有効にしていないため）
+- TanStack Query のキャッシュ変更の通知は `setTimeout(0)` で遅れて届くので、直後の再描画は `waitFor` で待つ

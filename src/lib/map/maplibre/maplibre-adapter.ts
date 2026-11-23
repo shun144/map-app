@@ -137,6 +137,8 @@ export const createMapLibreMap: MapFactory = (
     style: { version: 8, sources: {}, layers: [] },
     center: [initialViewport.center.lng, initialViewport.center.lat],
     zoom: initialViewport.zoom,
+    // ダブルクリックでのズームは使わない。ズームはマウスホイールとズームボタンで行う
+    doubleClickZoom: false,
   })
   map.addControl(new NavigationControl(), 'bottom-right')
   map.addControl(new ScaleControl(), 'bottom-left')
@@ -351,18 +353,20 @@ export const createMapLibreMap: MapFactory = (
     },
 
     subscribeToFeatureClick: (listener) => {
-      const notifyFeatureClick = (event: MapMouseEvent) =>
-        listener(findFeatureUnderPointer(event))
-      map.on('click', notifyFeatureClick)
+      const handleFeatureClick = (event: MapMouseEvent) => {
+        const featureUnderPointer = findFeatureUnderPointer(event)
+        listener(featureUnderPointer)
+      }
+      map.on('click', handleFeatureClick)
       featureClickListenerCount += 1
       return () => {
-        map.off('click', notifyFeatureClick)
+        map.off('click', handleFeatureClick)
         featureClickListenerCount -= 1
       }
     },
 
     subscribeToRightClick: (listener) => {
-      const notifyRightClick = (event: MapMouseEvent) => {
+      const handleRightClick = (event: MapMouseEvent) => {
         event.originalEvent.preventDefault()
         const wrappedLngLat = event.lngLat.wrap()
         listener({
@@ -373,8 +377,8 @@ export const createMapLibreMap: MapFactory = (
           pointInMap: { x: event.point.x, y: event.point.y },
         })
       }
-      map.on('contextmenu', notifyRightClick)
-      return () => map.off('contextmenu', notifyRightClick)
+      map.on('contextmenu', handleRightClick)
+      return () => map.off('contextmenu', handleRightClick)
     },
 
     subscribeToMoveStart: (listener) => {
